@@ -1,4 +1,5 @@
 luaapi.3
+liblua.3
 luaL_Buffer.3
 luaL_Reg.3
 luaL_addchar.3

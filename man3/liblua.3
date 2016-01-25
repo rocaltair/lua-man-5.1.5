@@ -1,0 +1,482 @@
+.TH "luaapi" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH Type Macros
+\fBLUA_TNIL\fP,
+\fBLUA_TNUMBER\fP,
+\fBLUA_TBOOLEAN\fP,
+\fBLUA_TSTRING\fP,
+\fBLUA_TTABLE\fP,
+\fBLUA_TFUNCTION\fP,
+\fBLUA_TUSERDATA\fP,
+\fBLUA_TTHREAD\fP,
+\fBLUA_TLIGHTUSERDATA\fP.
+
+.SH Types
+.TP
+lua_Alloc
+typedef void * (*lua_Alloc) (void *ud, void *ptr, size_t osize, size_t nsize);
+.TP
+lua_CFunction
+typedef int (*lua_CFunction) (lua_State *L);
+.TP
+lua_Debug 
+.ft C 
+typedef struct lua_Debug {
+  int event;
+  const char *name;           /* (n) */
+  const char *namewhat;       /* (n) */
+  const char *what;           /* (S) */
+  const char *source;         /* (S) */
+  int currentline;            /* (l) */
+  int nups;                   /* (u) number of upvalues */
+  int linedefined;            /* (S) */
+  int lastlinedefined;        /* (S) */
+  char short_src[LUA_IDSIZE]; /* (S) */
+  /* private part */
+  other fields
+} lua_Debug;
+.ft P
+.TP
+lua_Hook
+typedef void (*lua_Hook) (lua_State *L, lua_Debug *ar);
+.TP
+lua_Integer
+typedef ptrdiff_t lua_Integer;
+.TP
+lua_Number
+typedef double lua_Number;
+.TP
+lua_Reader
+typedef const char * (*lua_Reader) (lua_State *L, void *data, size_t *size);
+.TP
+lua_State
+typedef struct lua_State lua_State;
+.TP
+lua_Writer
+typedef int (*lua_Writer) (lua_State *L, const void* p, size_t sz, void* ud);
+.TP
+lua_atpanic
+lua_CFunction lua_atpanic (lua_State *L, lua_CFunction panicf);
+.SH API
+.TP
+lua_call
+void lua_call (lua_State *L, int nargs, int nresults);
+.TP
+lua_checkstack
+int lua_checkstack (lua_State *L, int extra);
+.TP
+lua_close
+void lua_close (lua_State *L);
+.TP
+lua_concat
+void lua_concat (lua_State *L, int n);
+.TP
+lua_cpcall
+int lua_cpcall (lua_State *L, lua_CFunction func, void *ud);
+.TP
+lua_createtable
+void lua_createtable (lua_State *L, int narr, int nrec);
+.TP
+lua_dump
+int lua_dump (lua_State *L, lua_Writer writer, void *data);
+.TP
+lua_equal
+int lua_equal (lua_State *L, int index1, int index2);
+.TP
+lua_error
+int lua_error (lua_State *L);
+.TP
+lua_gc
+int lua_gc (lua_State *L, int what, int data);
+.TP
+lua_getallocf
+lua_Alloc lua_getallocf (lua_State *L, void **ud);
+.TP
+lua_getfenv
+void lua_getfenv (lua_State *L, int index);
+.TP
+lua_getfield
+void lua_getfield (lua_State *L, int index, const char *k);
+.TP
+lua_getglobal
+void lua_getglobal (lua_State *L, const char *name);
+.TP
+lua_gethook
+lua_Hook lua_gethook (lua_State *L);
+.TP
+lua_gethookcount
+int lua_gethookcount (lua_State *L);
+.TP
+lua_gethookmask
+int lua_gethookmask (lua_State *L);
+.TP
+lua_getinfo
+int lua_getinfo (lua_State *L, const char *what, lua_Debug *ar);
+.TP
+lua_getlocal
+const char *lua_getlocal (lua_State *L, lua_Debug *ar, int n);
+.TP
+lua_getmetatable
+int lua_getmetatable (lua_State *L, int index);
+.TP
+lua_getstack
+int lua_getstack (lua_State *L, int level, lua_Debug *ar);
+.TP
+lua_gettable
+void lua_gettable (lua_State *L, int index);
+.TP
+lua_gettop
+int lua_gettop (lua_State *L);
+.TP
+lua_getupvalue
+const char *lua_getupvalue (lua_State *L, int funcindex, int n);
+.TP
+lua_insert
+void lua_insert (lua_State *L, int index);
+.TP
+lua_isboolean
+int lua_isboolean (lua_State *L, int index);
+.TP
+lua_iscfunction
+int lua_iscfunction (lua_State *L, int index);
+.TP
+lua_isfunction
+int lua_isfunction (lua_State *L, int index);
+.TP
+lua_islightuserdata
+int lua_islightuserdata (lua_State *L, int index);
+.TP
+lua_isnil
+int lua_isnil (lua_State *L, int index);
+.TP
+lua_isnone
+int lua_isnone (lua_State *L, int index);
+.TP
+lua_isnoneornil
+int lua_isnoneornil (lua_State *L, int index);
+.TP
+lua_isnumber
+int lua_isnumber (lua_State *L, int index);
+.TP
+lua_isstring
+int lua_isstring (lua_State *L, int index);
+.TP
+lua_istable
+int lua_istable (lua_State *L, int index);
+.TP
+lua_isthread
+int lua_isthread (lua_State *L, int index);
+.TP
+lua_isuserdata
+int lua_isuserdata (lua_State *L, int index);
+.TP
+lua_lessthan
+int lua_lessthan (lua_State *L, int index1, int index2);
+.TP
+lua_load
+int lua_load (lua_State *L, lua_Reader reader, void *data, const char *chunkname);
+.TP
+lua_newstate
+lua_State *lua_newstate (lua_Alloc f, void *ud);
+.TP
+lua_newtable
+void lua_newtable (lua_State *L);
+.TP
+lua_newthread
+lua_State *lua_newthread (lua_State *L);
+.TP
+lua_newuserdata
+void *lua_newuserdata (lua_State *L, size_t size);
+.TP
+lua_next
+int lua_next (lua_State *L, int index);
+.TP
+lua_objlen
+size_t lua_objlen (lua_State *L, int index);
+.TP
+lua_pcall
+int lua_pcall (lua_State *L, int nargs, int nresults, int errfunc);
+.TP
+lua_pop
+void lua_pop (lua_State *L, int n);
+.TP
+lua_pushboolean
+void lua_pushboolean (lua_State *L, int b);
+.TP
+lua_pushcclosure
+void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n);
+.TP
+lua_pushcfunction
+void lua_pushcfunction (lua_State *L, lua_CFunction f);
+.TP
+lua_pushfstring
+const char *lua_pushfstring (lua_State *L, const char *fmt, ...);
+.TP
+lua_pushinteger
+void lua_pushinteger (lua_State *L, lua_Integer n);
+.TP
+lua_pushlightuserdata
+void lua_pushlightuserdata (lua_State *L, void *p);
+.TP
+lua_pushliteral
+void lua_pushliteral (lua_State *L, const char *s);
+.TP
+lua_pushlstring
+void lua_pushlstring (lua_State *L, const char *s, size_t len);
+.TP
+lua_pushnil
+void lua_pushnil (lua_State *L);
+.TP
+lua_pushnumber
+void lua_pushnumber (lua_State *L, lua_Number n);
+.TP
+lua_pushstring
+void lua_pushstring (lua_State *L, const char *s);
+.TP
+lua_pushthread
+int lua_pushthread (lua_State *L);
+.TP
+lua_pushvalue
+void lua_pushvalue (lua_State *L, int index);
+.TP
+lua_pushvfstring
+const char *lua_pushvfstring (lua_State *L, const char *fmt, va_list argp);
+.TP
+lua_rawequal
+int lua_rawequal (lua_State *L, int index1, int index2);
+.TP
+lua_rawget
+void lua_rawget (lua_State *L, int index);
+.TP
+lua_rawgeti
+void lua_rawgeti (lua_State *L, int index, int n);
+.TP
+lua_rawset
+void lua_rawset (lua_State *L, int index);
+.TP
+lua_rawseti
+void lua_rawseti (lua_State *L, int index, int n);
+.TP
+lua_register
+void lua_register (lua_State *L, const char *name, lua_CFunction f);
+.TP
+lua_remove
+void lua_remove (lua_State *L, int index);
+.TP
+lua_replace
+void lua_replace (lua_State *L, int index);
+.TP
+lua_resume
+int lua_resume (lua_State *L, int narg);
+.TP
+lua_setallocf
+void lua_setallocf (lua_State *L, lua_Alloc f, void *ud);
+.TP
+lua_setfenv
+int lua_setfenv (lua_State *L, int index);
+.TP
+lua_setfield
+void lua_setfield (lua_State *L, int index, const char *k);
+.TP
+lua_setglobal
+void lua_setglobal (lua_State *L, const char *name);
+.TP
+lua_sethook
+int lua_sethook (lua_State *L, lua_Hook f, int mask, int count);
+.TP
+lua_setlocal
+const char *lua_setlocal (lua_State *L, lua_Debug *ar, int n);
+.TP
+lua_setmetatable
+int lua_setmetatable (lua_State *L, int index);
+.TP
+lua_settable
+void lua_settable (lua_State *L, int index);
+.TP
+lua_settop
+void lua_settop (lua_State *L, int index);
+.TP
+lua_setupvalue
+const char *lua_setupvalue (lua_State *L, int funcindex, int n);
+.TP
+lua_status
+int lua_status (lua_State *L);
+.TP
+lua_toboolean
+int lua_toboolean (lua_State *L, int index);
+.TP
+lua_tocfunction
+lua_CFunction lua_tocfunction (lua_State *L, int index);
+.TP
+lua_tointeger
+lua_Integer lua_tointeger (lua_State *L, int index);
+.TP
+lua_tolstring
+const char *lua_tolstring (lua_State *L, int index, size_t *len);
+.TP
+lua_tonumber
+lua_Number lua_tonumber (lua_State *L, int index);
+.TP
+lua_topointer
+const void *lua_topointer (lua_State *L, int index);
+.TP
+lua_tostring
+const char *lua_tostring (lua_State *L, int index);
+.TP
+lua_tothread
+lua_State *lua_tothread (lua_State *L, int index);
+.TP
+lua_touserdata
+void *lua_touserdata (lua_State *L, int index);
+.TP
+lua_type
+int lua_type (lua_State *L, int index);
+.TP
+lua_typename
+const char *lua_typename  (lua_State *L, int tp);
+.TP
+lua_xmove
+void lua_xmove (lua_State *from, lua_State *to, int n);
+.TP
+lua_yield
+int lua_yield  (lua_State *L, int nresults);
+.SH auxiliary library
+.TP
+luaL_Buffer
+typedef struct luaL_Buffer luaL_Buffer;
+.TP
+luaL_Reg
+.TP
+luaL_addchar
+void luaL_addchar (luaL_Buffer *B, char c);
+.TP
+luaL_addlstring
+void luaL_addlstring (luaL_Buffer *B, const char *s, size_t l);
+.TP
+luaL_addsize
+void luaL_addsize (luaL_Buffer *B, size_t n);
+.TP
+luaL_addstring
+void luaL_addstring (luaL_Buffer *B, const char *s);
+.TP
+luaL_addvalue
+void luaL_addvalue (luaL_Buffer *B);
+.TP
+luaL_argcheck
+void luaL_argcheck (lua_State *L, int cond, int narg, const char *extramsg);
+.TP
+luaL_argerror
+int luaL_argerror (lua_State *L, int narg, const char *extramsg);
+.TP
+luaL_buffinit
+void luaL_buffinit (lua_State *L, luaL_Buffer *B);
+.TP
+luaL_callmeta
+int luaL_callmeta (lua_State *L, int obj, const char *e);
+.TP
+luaL_checkany
+void luaL_checkany (lua_State *L, int narg);
+.TP
+luaL_checkint
+int luaL_checkint (lua_State *L, int narg);
+.TP
+luaL_checkinteger
+lua_Integer luaL_checkinteger (lua_State *L, int narg);
+.TP
+luaL_checklong
+long luaL_checklong (lua_State *L, int narg);
+.TP
+luaL_checklstring
+const char *luaL_checklstring (lua_State *L, int narg, size_t *l);
+.TP
+luaL_checknumber
+lua_Number luaL_checknumber (lua_State *L, int narg);
+.TP
+luaL_checkoption
+int luaL_checkoption (lua_State *L, int narg, const char *def, const char *const lst[]);
+.TP
+luaL_checkstack
+void luaL_checkstack (lua_State *L, int sz, const char *msg);
+.TP
+luaL_checkstring
+const char *luaL_checkstring (lua_State *L, int narg);
+.TP
+luaL_checktype
+void luaL_checktype (lua_State *L, int narg, int t);
+.TP
+luaL_checkudata
+void *luaL_checkudata (lua_State *L, int narg, const char *tname);
+.TP
+luaL_dofile
+int luaL_dofile (lua_State *L, const char *filename);
+.TP
+luaL_dostring
+int luaL_dostring (lua_State *L, const char *str);
+.TP
+luaL_error
+int luaL_error (lua_State *L, const char *fmt, ...);
+.TP
+luaL_getmetafield
+int luaL_getmetafield (lua_State *L, int obj, const char *e);
+.TP
+luaL_getmetatable
+void luaL_getmetatable (lua_State *L, const char *tname);
+.TP
+luaL_gsub
+const char *luaL_gsub (lua_State *L, const char *s, const char *p, const char *r);
+.TP
+luaL_loadbuffer
+int luaL_loadbuffer (lua_State *L, const char *buff, size_t sz, const char *name);
+.TP
+luaL_loadfile
+int luaL_loadfile (lua_State *L, const char *filename);
+.TP
+luaL_loadstring
+int luaL_loadstring (lua_State *L, const char *s);
+.TP
+luaL_newmetatable
+int luaL_newmetatable (lua_State *L, const char *tname);
+.TP
+luaL_newstate
+lua_State *luaL_newstate (void);
+.TP
+luaL_openlibs
+void luaL_openlibs (lua_State *L);
+.TP
+luaL_optint
+int luaL_optint (lua_State *L, int narg, int d);
+.TP
+luaL_optinteger
+lua_Integer luaL_optinteger (lua_State *L, int narg, lua_Integer d);
+.TP
+luaL_optlong
+long luaL_optlong (lua_State *L, int narg, long d);
+.TP
+luaL_optlstring
+const char *luaL_optlstring (lua_State *L, int narg, const char *d, size_t *l);
+.TP
+luaL_optnumber
+lua_Number luaL_optnumber (lua_State *L, int narg, lua_Number d);
+.TP
+luaL_optstring
+const char *luaL_optstring (lua_State *L, int narg, const char *d);
+.TP
+luaL_prepbuffer
+char *luaL_prepbuffer (luaL_Buffer *B);
+.TP
+luaL_pushresult
+void luaL_pushresult (luaL_Buffer *B);
+.TP
+luaL_ref
+int luaL_ref (lua_State *L, int t);
+.TP
+luaL_register
+void luaL_register (lua_State *L, const char *libname, const luaL_Reg *l);
+.TP
+luaL_typename
+const char *luaL_typename (lua_State *L, int index);
+.TP
+luaL_typerror
+int luaL_typerror (lua_State *L, int narg, const char *tname);
+.TP
+luaL_unref
+void luaL_unref (lua_State *L, int t, int ref);
