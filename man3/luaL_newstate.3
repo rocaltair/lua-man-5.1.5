@@ -1,0 +1,22 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+luaL_newstate - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+lua_State *luaL_newstate (void);
+
+.SH DESCRIPTION
+
+.sp
+Creates a new Lua state.
+It calls \fBlua_newstate\fP with an
+allocator based on the standard C \fBrealloc\fP function
+and then sets a panic function (see \fBlua_atpanic\fP) that prints
+an error message to the standard error output in case of fatal
+errors.
+
+.sp
+Returns the new state,
+or \fBNULL\fP if there is a memory allocation error.

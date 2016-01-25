@@ -1,0 +1,19 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+luaL_argcheck - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBv\fP]
+.SH SYNOPSIS
+void luaL_argcheck (lua_State *L, int cond, int narg, const char *extramsg);
+
+.SH DESCRIPTION
+
+.sp
+Checks whether \fBcond\fP is true.
+If not, raises an error with the following message,
+where \fBfunc\fP is retrieved from the call stack:
+
+.ft C
+     bad argument #<narg> to <func> (<extramsg>)
+.ft P

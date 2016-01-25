@@ -1,0 +1,27 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+luaL_loadfile - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fBm\fP]
+.SH SYNOPSIS
+int luaL_loadfile (lua_State *L, const char *filename);
+
+.SH DESCRIPTION
+
+.sp
+Loads a file as a Lua chunk.
+This function uses \fBlua_load\fP to load the chunk in the file
+named \fBfilename\fP.
+If \fBfilename\fP is \fBNULL\fP,
+then it loads from the standard input.
+The first line in the file is ignored if it starts with a \fB#\fP.
+
+.sp
+This function returns the same results as \fBlua_load\fP,
+but it has an extra error code \fBLUA_ERRFILE\fP
+if it cannot open/read the file.
+
+.sp
+As \fBlua_load\fP, this function only loads the chunk;
+it does not run it.

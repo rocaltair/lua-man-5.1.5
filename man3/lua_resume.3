@@ -1,0 +1,35 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_resume - liblua API documentation
+
+.SH PROPERTIES
+[-?, +?, \fB-\fP]
+.SH SYNOPSIS
+int lua_resume (lua_State *L, int narg);
+
+.SH DESCRIPTION
+
+.sp
+Starts and resumes a coroutine in a given thread.
+
+.sp
+To start a coroutine, you first create a new thread
+(see \fBlua_newthread\fP);
+then you push onto its stack the main function plus any arguments;
+then you call \fBlua_resume\fP,
+with \fBnarg\fP being the number of arguments.
+This call returns when the coroutine suspends or finishes its execution.
+When it returns, the stack contains all values passed to \fBlua_yield\fP,
+or all values returned by the body function.
+\fBlua_resume\fP returns
+\fBLUA_YIELD\fP if the coroutine yields,
+0 if the coroutine finishes its execution
+without errors,
+or an error code in case of errors (see \fBlua_pcall\fP).
+In case of errors,
+the stack is not unwound,
+so you can use the debug API over it.
+The error message is on the top of the stack.
+To restart a coroutine, you put on its stack only the values to
+be passed as results from \fByield\fP,
+and then call \fBlua_resume\fP.

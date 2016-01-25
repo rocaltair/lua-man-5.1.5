@@ -1,0 +1,16 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+luaL_gsub - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fBm\fP]
+.SH SYNOPSIS
+const char *luaL_gsub (lua_State *L, const char *s, const char *p, const char *r);
+
+.SH DESCRIPTION
+
+.sp
+Creates a copy of string \fBs\fP by replacing
+any occurrence of the string \fBp\fP
+with the string \fBr\fP.
+Pushes the resulting string on the stack and returns it.

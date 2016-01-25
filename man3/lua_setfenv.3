@@ -1,0 +1,18 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_setfenv - liblua API documentation
+
+.SH PROPERTIES
+[-1, +0, \fB-\fP]
+.SH SYNOPSIS
+int lua_setfenv (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Pops a table from the stack and sets it as
+the new environment for the value at the given index.
+If the value at the given index is
+neither a function nor a thread nor a userdata,
+\fBlua_setfenv\fP returns 0.
+Otherwise it returns 1.

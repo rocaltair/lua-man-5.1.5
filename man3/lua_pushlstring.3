@@ -1,0 +1,18 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_pushlstring - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fBm\fP]
+.SH SYNOPSIS
+void lua_pushlstring (lua_State *L, const char *s, size_t len);
+
+.SH DESCRIPTION
+
+.sp
+Pushes the string pointed to by \fBs\fP with size \fBlen\fP
+onto the stack.
+Lua makes (or reuses) an internal copy of the given string,
+so the memory at \fBs\fP can be freed or reused immediately after
+the function returns.
+The string can contain embedded zeros.

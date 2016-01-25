@@ -1,0 +1,17 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+luaL_optinteger - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBv\fP]
+.SH SYNOPSIS
+lua_Integer luaL_optinteger (lua_State *L, int narg, lua_Integer d);
+
+.SH DESCRIPTION
+
+.sp
+If the function argument \fBnarg\fP is a number,
+returns this number cast to a \fBlua_Integer\fP.
+If this argument is absent or is \fBnil\fP,
+returns \fBd\fP.
+Otherwise, raises an error.

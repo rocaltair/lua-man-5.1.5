@@ -1,0 +1,17 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_touserdata - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+void *lua_touserdata (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+If the value at the given acceptable index is a full userdata,
+returns its block address.
+If the value is a light userdata,
+returns its pointer.
+Otherwise, returns \fBNULL\fP.

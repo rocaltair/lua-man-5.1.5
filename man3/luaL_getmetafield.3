@@ -1,0 +1,17 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+luaL_getmetafield - liblua API documentation
+
+.SH PROPERTIES
+[-0, +(0|1), \fBm\fP]
+.SH SYNOPSIS
+int luaL_getmetafield (lua_State *L, int obj, const char *e);
+
+.SH DESCRIPTION
+
+.sp
+Pushes onto the stack the field \fBe\fP from the metatable
+of the object at index \fBobj\fP.
+If the object does not have a metatable,
+or if the metatable does not have this field,
+returns 0 and pushes nothing.

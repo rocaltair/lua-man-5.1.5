@@ -1,0 +1,28 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_pushcfunction - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fBm\fP]
+.SH SYNOPSIS
+void lua_pushcfunction (lua_State *L, lua_CFunction f);
+
+.SH DESCRIPTION
+
+.sp
+Pushes a C function onto the stack.
+This function receives a pointer to a C function
+and pushes onto the stack a Lua value of type \fBfunction\fP that,
+when called, invokes the corresponding C function.
+
+.sp
+Any function to be registered in Lua must
+follow the correct protocol to receive its parameters
+and return its results (see \fBlua_CFunction\fP).
+
+.sp
+\fBlua_pushcfunction\fP is defined as a macro:
+
+.ft C
+     #define lua_pushcfunction(L,f)  lua_pushcclosure(L,f,0)
+.ft P

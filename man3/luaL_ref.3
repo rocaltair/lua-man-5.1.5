@@ -1,0 +1,29 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+luaL_ref - liblua API documentation
+
+.SH PROPERTIES
+[-1, +0, \fBm\fP]
+.SH SYNOPSIS
+int luaL_ref (lua_State *L, int t);
+
+.SH DESCRIPTION
+
+.sp
+Creates and returns a \fBreference\fP,
+in the table at index \fBt\fP,
+for the object at the top of the stack (and pops the object).
+
+.sp
+A reference is a unique integer key.
+As long as you do not manually add integer keys into table \fBt\fP,
+\fBluaL_ref\fP ensures the uniqueness of the key it returns.
+You can retrieve an object referred by reference \fBr\fP
+by calling \fBlua_rawgeti(L, t, r)\fP.
+Function \fBluaL_unref\fP frees a reference and its associated object.
+
+.sp
+If the object at the top of the stack is \fBnil\fP,
+\fBluaL_ref\fP returns the constant \fBLUA_REFNIL\fP.
+The constant \fBLUA_NOREF\fP is guaranteed to be different
+from any reference returned by \fBluaL_ref\fP.

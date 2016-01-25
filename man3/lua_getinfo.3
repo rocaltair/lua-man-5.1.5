@@ -1,0 +1,72 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_getinfo - liblua API documentation
+
+.SH PROPERTIES
+[-(0|1), +(0|1|2), \fBm\fP]
+.SH SYNOPSIS
+int lua_getinfo (lua_State *L, const char *what, lua_Debug *ar);
+
+.SH DESCRIPTION
+
+.sp
+Returns information about a specific function or function invocation.
+
+.sp
+To get information about a function invocation,
+the parameter \fBar\fP must be a valid activation record that was
+filled by a previous call to \fBlua_getstack\fP or
+given as argument to a hook (see \fBlua_Hook\fP).
+
+.sp
+To get information about a function you push it onto the stack
+and start the \fBwhat\fP string with the character '\fB>\fP'.
+(In that case,
+\fBlua_getinfo\fP pops the function in the top of the stack.)
+For instance, to know in which line a function \fBf\fP was defined,
+you can write the following code:
+
+.ft C
+     lua_Debug ar;
+     lua_getfield(L, LUA_GLOBALSINDEX, "f");  /* get global 'f' */
+     lua_getinfo(L, ">S", &ar);
+     printf("%d\n", ar.linedefined);
+.ft P
+
+.sp
+Each character in the string \fBwhat\fP
+selects some fields of the structure \fBar\fP to be filled or
+a value to be pushed on the stack:
+
+.TP
+\fB'\fBn\fP':\fP fills in the field \fBname\fP and \fBnamewhat\fP;
+
+.TP
+\fB'\fBS\fP':\fP
+fills in the fields \fBsource\fP, \fBshort_src\fP,
+\fBlinedefined\fP, \fBlastlinedefined\fP, and \fBwhat\fP;
+
+.TP
+\fB'\fBl\fP':\fP fills in the field \fBcurrentline\fP;
+
+.TP
+\fB'\fBu\fP':\fP fills in the field \fBnups\fP;
+
+.TP
+\fB'\fBf\fP':\fP
+pushes onto the stack the function that is
+running at the given level;
+
+.TP
+\fB'\fBL\fP':\fP
+pushes onto the stack a table whose indices are the
+numbers of the lines that are valid on the function.
+(A \fBvalid line\fP is a line with some associated code,
+that is, a line where you can put a break point.
+Non-valid lines include empty lines and comments.)
+
+.PP
+
+.sp
+This function returns 0 on error
+(for instance, an invalid option in \fBwhat\fP).

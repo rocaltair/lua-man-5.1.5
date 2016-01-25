@@ -1,0 +1,21 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_settable - liblua API documentation
+
+.SH PROPERTIES
+[-2, +0, \fBe\fP]
+.SH SYNOPSIS
+void lua_settable (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Does the equivalent to \fBt[k] = v\fP,
+where \fBt\fP is the value at the given valid index,
+\fBv\fP is the value at the top of the stack,
+and \fBk\fP is the value just below the top.
+
+.sp
+This function pops both the key and the value from the stack.
+As in Lua, this function may trigger a metamethod
+for the "newindex" event.

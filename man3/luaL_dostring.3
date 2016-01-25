@@ -1,0 +1,22 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+luaL_dostring - liblua API documentation
+
+.SH PROPERTIES
+[-0, +?, \fBm\fP]
+.SH SYNOPSIS
+int luaL_dostring (lua_State *L, const char *str);
+
+.SH DESCRIPTION
+
+.sp
+Loads and runs the given string.
+It is defined as the following macro:
+
+.ft C
+     (luaL_loadstring(L, str) || lua_pcall(L, 0, LUA_MULTRET, 0))
+.ft P
+
+.sp
+It returns 0 if there are no errors
+or 1 in case of errors.

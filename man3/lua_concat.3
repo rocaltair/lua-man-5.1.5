@@ -1,0 +1,18 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_concat - liblua API documentation
+
+.SH PROPERTIES
+[-n, +1, \fBe\fP]
+.SH SYNOPSIS
+void lua_concat (lua_State *L, int n);
+
+.SH DESCRIPTION
+
+.sp
+Concatenates the \fBn\fP values at the top of the stack,
+pops them, and leaves the result at the top.
+If \fBn\fP is 1, the result is the single value on the stack
+(that is, the function does nothing);
+if \fBn\fP is 0, the result is the empty string.
+Concatenation is performed following the usual semantics of Lua

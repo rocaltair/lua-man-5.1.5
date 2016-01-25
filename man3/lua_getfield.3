@@ -1,0 +1,16 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_getfield - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fBe\fP]
+.SH SYNOPSIS
+void lua_getfield (lua_State *L, int index, const char *k);
+
+.SH DESCRIPTION
+
+.sp
+Pushes onto the stack the value \fBt[k]\fP,
+where \fBt\fP is the value at the given valid index.
+As in Lua, this function may trigger a metamethod
+for the "index" event.

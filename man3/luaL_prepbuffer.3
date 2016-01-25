@@ -1,0 +1,18 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+luaL_prepbuffer - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+char *luaL_prepbuffer (luaL_Buffer *B);
+
+.SH DESCRIPTION
+
+.sp
+Returns an address to a space of size \fBLUAL_BUFFERSIZE\fP
+where you can copy a string to be added to buffer \fBB\fP
+(see \fBluaL_Buffer\fP).
+After copying the string into this space you must call
+\fBluaL_addsize\fP with the size of the string to actually add 
+it to the buffer.

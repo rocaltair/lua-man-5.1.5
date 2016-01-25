@@ -1,0 +1,28 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+luaL_checkoption - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBv\fP]
+.SH SYNOPSIS
+int luaL_checkoption (lua_State *L, int narg, const char *def, const char *const lst[]);
+
+.SH DESCRIPTION
+
+.sp
+Checks whether the function argument \fBnarg\fP is a string and
+searches for this string in the array \fBlst\fP
+(which must be NULL-terminated).
+Returns the index in the array where the string was found.
+Raises an error if the argument is not a string or
+if the string cannot be found.
+
+.sp
+If \fBdef\fP is not \fBNULL\fP,
+the function uses \fBdef\fP as a default value when
+there is no argument \fBnarg\fP or if this argument is \fBnil\fP.
+
+.sp
+This is a useful function for mapping strings to C enums.
+(The usual convention in Lua libraries is
+to use strings instead of numbers to select options.)

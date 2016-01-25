@@ -1,0 +1,30 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_pushcclosure - liblua API documentation
+
+.SH PROPERTIES
+[-n, +1, \fBm\fP]
+.SH SYNOPSIS
+void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n);
+
+.SH DESCRIPTION
+
+.sp
+Pushes a new C closure onto the stack.
+
+.sp
+When a C function is created,
+it is possible to associate some values with it,
+thus creating a C closure;
+these values are then accessible to the function whenever it is called.
+To associate values with a C function,
+first these values should be pushed onto the stack
+(when there are multiple values, the first value is pushed first).
+Then \fBlua_pushcclosure\fP
+is called to create and push the C function onto the stack,
+with the argument \fBn\fP telling how many values should be
+associated with the function.
+\fBlua_pushcclosure\fP also pops these values from the stack.
+
+.sp
+The maximum value for \fBn\fP is 255.

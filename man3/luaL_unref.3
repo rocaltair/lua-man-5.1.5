@@ -1,0 +1,21 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+luaL_unref - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+void luaL_unref (lua_State *L, int t, int ref);
+
+.SH DESCRIPTION
+
+.sp
+Releases reference \fBref\fP from the table at index \fBt\fP
+(see \fBluaL_ref\fP).
+The entry is removed from the table,
+so that the referred object can be collected.
+The reference \fBref\fP is also freed to be used again.
+
+.sp
+If \fBref\fP is \fBLUA_NOREF\fP or \fBLUA_REFNIL\fP,
+\fBluaL_unref\fP does nothing.

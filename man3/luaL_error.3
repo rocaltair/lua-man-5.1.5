@@ -1,0 +1,24 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+luaL_error - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBv\fP]
+.SH SYNOPSIS
+int luaL_error (lua_State *L, const char *fmt, ...);
+
+.SH DESCRIPTION
+
+.sp
+Raises an error.
+The error message format is given by \fBfmt\fP
+plus any extra arguments,
+following the same rules of \fBlua_pushfstring\fP.
+It also adds at the beginning of the message the file name and
+the line number where the error occurred,
+if this information is available.
+
+.sp
+This function never returns,
+but it is an idiom to use it in C functions
+as \fBreturn luaL_error(\fBargs\fP)\fP.

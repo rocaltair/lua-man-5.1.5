@@ -1,0 +1,19 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_State - liblua API documentation
+
+.SH SYNOPSIS
+typedef struct lua_State lua_State;
+
+.SH DESCRIPTION
+
+.sp
+Opaque structure that keeps the whole state of a Lua interpreter.
+The Lua library is fully reentrant:
+it has no global variables.
+All information about a state is kept in this structure.
+
+.sp
+A pointer to this state must be passed as the first argument to
+every function in the library, except to \fBlua_newstate\fP,
+which creates a Lua state from scratch.

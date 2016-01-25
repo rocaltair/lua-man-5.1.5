@@ -1,0 +1,20 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_rawseti - liblua API documentation
+
+.SH PROPERTIES
+[-1, +0, \fBm\fP]
+.SH SYNOPSIS
+void lua_rawseti (lua_State *L, int index, int n);
+
+.SH DESCRIPTION
+
+.sp
+Does the equivalent of \fBt[n] = v\fP,
+where \fBt\fP is the value at the given valid index
+and \fBv\fP is the value at the top of the stack.
+
+.sp
+This function pops the value from the stack.
+The assignment is raw;
+that is, it does not invoke metamethods.

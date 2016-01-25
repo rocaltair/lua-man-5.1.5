@@ -1,0 +1,62 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_gc - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBe\fP]
+.SH SYNOPSIS
+int lua_gc (lua_State *L, int what, int data);
+
+.SH DESCRIPTION
+
+.sp
+Controls the garbage collector.
+
+.sp
+This function performs several tasks,
+according to the value of the parameter \fBwhat\fP:
+
+.TP
+\fB\fBLUA_GCSTOP\fP:\fP
+stops the garbage collector.
+
+.TP
+\fB\fBLUA_GCRESTART\fP:\fP
+restarts the garbage collector.
+
+.TP
+\fB\fBLUA_GCCOLLECT\fP:\fP
+performs a full garbage-collection cycle.
+
+.TP
+\fB\fBLUA_GCCOUNT\fP:\fP
+returns the current amount of memory (in Kbytes) in use by Lua.
+
+.TP
+\fB\fBLUA_GCCOUNTB\fP:\fP
+returns the remainder of dividing the current amount of bytes of
+memory in use by Lua by 1024.
+
+.TP
+\fB\fBLUA_GCSTEP\fP:\fP
+performs an incremental step of garbage collection.
+The step "size" is controlled by \fBdata\fP
+(larger values mean more steps) in a non-specified way.
+If you want to control the step size
+you must experimentally tune the value of \fBdata\fP.
+The function returns 1 if the step finished a
+garbage-collection cycle.
+
+.TP
+\fB\fBLUA_GCSETPAUSE\fP:\fP
+sets \fBdata\fP as the new value
+for the \fBpause\fP of the collector.
+The function returns the previous value of the pause.
+
+.TP
+\fB\fBLUA_GCSETSTEPMUL\fP:\fP
+sets \fBdata\fP as the new value for the \fBstep multiplier\fP of
+the collector.
+The function returns the previous value of the step multiplier.
+
+.PP

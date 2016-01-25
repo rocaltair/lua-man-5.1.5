@@ -1,0 +1,17 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_getmetatable - liblua API documentation
+
+.SH PROPERTIES
+[-0, +(0|1), \fB-\fP]
+.SH SYNOPSIS
+int lua_getmetatable (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Pushes onto the stack the metatable of the value at the given
+acceptable index.
+If the index is not valid,
+or if the value does not have a metatable,
+the function returns 0 and pushes nothing on the stack.

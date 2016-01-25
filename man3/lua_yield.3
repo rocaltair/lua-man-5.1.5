@@ -1,0 +1,35 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_yield - liblua API documentation
+
+.SH PROPERTIES
+[-?, +?, \fB-\fP]
+.SH SYNOPSIS
+int lua_yield  (lua_State *L, int nresults);
+
+.SH DESCRIPTION
+
+.sp
+Yields a coroutine.
+
+.sp
+This function should only be called as the
+return expression of a C function, as follows:
+
+.ft C
+     return lua_yield (L, nresults);
+.ft P
+.sp
+When a C function calls \fBlua_yield\fP in that way,
+the running coroutine suspends its execution,
+and the call to \fBlua_resume\fP that started this coroutine returns.
+The parameter \fBnresults\fP is the number of values from the stack
+that are passed as results to \fBlua_resume\fP.
+
+.sp
+Lua has no built-in debugging facilities.
+Instead, it offers a special interface
+by means of functions and \fBhooks\fP.
+This interface allows the construction of different
+kinds of debuggers, profilers, and other tools
+that need "inside information" from the interpreter.

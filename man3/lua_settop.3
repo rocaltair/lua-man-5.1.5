@@ -1,0 +1,17 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_settop - liblua API documentation
+
+.SH PROPERTIES
+[-?, +?, \fB-\fP]
+.SH SYNOPSIS
+void lua_settop (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Accepts any acceptable index, or 0,
+and sets the stack top to this index.
+If the new top is larger than the old one,
+then the new elements are filled with \fBnil\fP.
+If \fBindex\fP is 0, then all stack elements are removed.

@@ -1,0 +1,21 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+luaL_optlstring - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBv\fP]
+.SH SYNOPSIS
+const char *luaL_optlstring (lua_State *L, int narg, const char *d, size_t *l);
+
+.SH DESCRIPTION
+
+.sp
+If the function argument \fBnarg\fP is a string,
+returns this string.
+If this argument is absent or is \fBnil\fP,
+returns \fBd\fP.
+Otherwise, raises an error.
+
+.sp
+If \fBl\fP is not \fBNULL\fP,
+fills the position \fB*l\fP with the results's length.

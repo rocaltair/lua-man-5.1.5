@@ -1,0 +1,14 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_rawget - liblua API documentation
+
+.SH PROPERTIES
+[-1, +1, \fB-\fP]
+.SH SYNOPSIS
+void lua_rawget (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Similar to \fBlua_gettable\fP, but does a raw access
+(i.e., without metamethods).

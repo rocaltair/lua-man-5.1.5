@@ -1,0 +1,19 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_setglobal - liblua API documentation
+
+.SH PROPERTIES
+[-1, +0, \fBe\fP]
+.SH SYNOPSIS
+void lua_setglobal (lua_State *L, const char *name);
+
+.SH DESCRIPTION
+
+.sp
+Pops a value from the stack and
+sets it as the new value of global \fBname\fP.
+It is defined as a macro:
+
+.ft C
+     #define lua_setglobal(L,s)   lua_setfield(L, LUA_GLOBALSINDEX, s)
+.ft P

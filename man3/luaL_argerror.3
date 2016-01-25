@@ -1,0 +1,23 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+luaL_argerror - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBv\fP]
+.SH SYNOPSIS
+int luaL_argerror (lua_State *L, int narg, const char *extramsg);
+
+.SH DESCRIPTION
+
+.sp
+Raises an error with the following message,
+where \fBfunc\fP is retrieved from the call stack:
+
+.ft C
+     bad argument #<narg> to <func> (<extramsg>)
+.ft P
+
+.sp
+This function never returns,
+but it is an idiom to use it in C functions
+as \fBreturn luaL_argerror(\fBargs\fP)\fP.

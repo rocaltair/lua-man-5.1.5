@@ -1,0 +1,16 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_isnoneornil - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+int lua_isnoneornil (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Returns 1 if the given acceptable index is not valid
+(that is, it refers to an element outside the current stack)
+or if the value at this index is \fBnil\fP,
+and 0 otherwise.

@@ -1,0 +1,18 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_createtable - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fBm\fP]
+.SH SYNOPSIS
+void lua_createtable (lua_State *L, int narr, int nrec);
+
+.SH DESCRIPTION
+
+.sp
+Creates a new empty table and pushes it onto the stack.
+The new table has space pre-allocated
+for \fBnarr\fP array elements and \fBnrec\fP non-array elements.
+This pre-allocation is useful when you know exactly how many elements
+the table will have.
+Otherwise you can use the function \fBlua_newtable\fP.

@@ -1,0 +1,22 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_Writer - liblua API documentation
+
+.SH SYNOPSIS
+typedef int (*lua_Writer) (lua_State *L, const void* p, size_t sz, void* ud);
+
+.SH DESCRIPTION
+
+.sp
+The type of the writer function used by \fBlua_dump\fP.
+Every time it produces another piece of chunk,
+\fBlua_dump\fP calls the writer,
+passing along the buffer to be written (\fBp\fP),
+its size (\fBsz\fP),
+and the \fBdata\fP parameter supplied to \fBlua_dump\fP.
+
+.sp
+The writer returns an error code:
+0 means no errors;
+any other value means an error and stops \fBlua_dump\fP from
+calling the writer again.

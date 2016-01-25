@@ -1,0 +1,15 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_tocfunction - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+lua_CFunction lua_tocfunction (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Converts a value at the given acceptable index to a C function.
+That value must be a C function;
+otherwise, returns \fBNULL\fP.

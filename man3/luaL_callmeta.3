@@ -1,0 +1,22 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+luaL_callmeta - liblua API documentation
+
+.SH PROPERTIES
+[-0, +(0|1), \fBe\fP]
+.SH SYNOPSIS
+int luaL_callmeta (lua_State *L, int obj, const char *e);
+
+.SH DESCRIPTION
+
+.sp
+Calls a metamethod.
+
+.sp
+If the object at index \fBobj\fP has a metatable and this
+metatable has a field \fBe\fP,
+this function calls this field and passes the object as its only argument.
+In this case this function returns 1 and pushes onto the
+stack the value returned by the call.
+If there is no metatable or no metamethod,
+this function returns 0 (without pushing any value on the stack).

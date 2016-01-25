@@ -1,0 +1,21 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_topointer - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+const void *lua_topointer (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Converts the value at the given acceptable index to a generic
+C pointer (\fBvoid*\fP).
+The value can be a userdata, a table, a thread, or a function;
+otherwise, \fBlua_topointer\fP returns \fBNULL\fP.
+Different objects will give different pointers.
+There is no way to convert the pointer back to its original value.
+
+.sp
+Typically this function is used only for debug information.

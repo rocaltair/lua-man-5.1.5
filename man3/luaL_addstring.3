@@ -1,0 +1,16 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+luaL_addstring - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBm\fP]
+.SH SYNOPSIS
+void luaL_addstring (luaL_Buffer *B, const char *s);
+
+.SH DESCRIPTION
+
+.sp
+Adds the zero-terminated string pointed to by \fBs\fP
+to the buffer \fBB\fP
+(see \fBluaL_Buffer\fP).
+The string may not contain embedded zeros.

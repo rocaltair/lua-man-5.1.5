@@ -1,0 +1,15 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_replace - liblua API documentation
+
+.SH PROPERTIES
+[-1, +0, \fB-\fP]
+.SH SYNOPSIS
+void lua_replace (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Moves the top element into the given position (and pops it),
+without shifting any element
+(therefore replacing the value at the given position).

@@ -1,0 +1,16 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_tonumber - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+lua_Number lua_tonumber (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Converts the Lua value at the given acceptable index
+to the C type \fBlua_Number\fP (see \fBlua_Number\fP).
+The Lua value must be a number or a string convertible to a number;
+otherwise, \fBlua_tonumber\fP returns 0.

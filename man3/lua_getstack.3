@@ -1,0 +1,23 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_getstack - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+int lua_getstack (lua_State *L, int level, lua_Debug *ar);
+
+.SH DESCRIPTION
+
+.sp
+Get information about the interpreter runtime stack.
+
+.sp
+This function fills parts of a \fBlua_Debug\fP structure with
+an identification of the \fBactivation record\fP
+of the function executing at a given level.
+Level 0 is the current running function,
+whereas level \fBn+1\fP is the function that has called level \fBn\fP.
+When there are no errors, \fBlua_getstack\fP returns 1;
+when called with a level greater than the stack depth,
+it returns 0.

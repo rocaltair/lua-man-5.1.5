@@ -1,0 +1,18 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_error - liblua API documentation
+
+.SH PROPERTIES
+[-1, +0, \fBv\fP]
+.SH SYNOPSIS
+int lua_error (lua_State *L);
+
+.SH DESCRIPTION
+
+.sp
+Generates a Lua error.
+The error message (which can actually be a Lua value of any type)
+must be on the stack top.
+This function does a long jump,
+and therefore never returns.
+(see \fBluaL_error\fP).

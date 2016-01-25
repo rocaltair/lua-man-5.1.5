@@ -1,0 +1,17 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_xmove - liblua API documentation
+
+.SH PROPERTIES
+[-?, +?, \fB-\fP]
+.SH SYNOPSIS
+void lua_xmove (lua_State *from, lua_State *to, int n);
+
+.SH DESCRIPTION
+
+.sp
+Exchange values between different threads of the \fBsame\fP global state.
+
+.sp
+This function pops \fBn\fP values from the stack \fBfrom\fP,
+and pushes them onto the stack \fBto\fP.

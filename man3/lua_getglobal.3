@@ -1,0 +1,18 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_getglobal - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fBe\fP]
+.SH SYNOPSIS
+void lua_getglobal (lua_State *L, const char *name);
+
+.SH DESCRIPTION
+
+.sp
+Pushes onto the stack the value of the global \fBname\fP.
+It is defined as a macro:
+
+.ft C
+     #define lua_getglobal(L,s)  lua_getfield(L, LUA_GLOBALSINDEX, s)
+.ft P

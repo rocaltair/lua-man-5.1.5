@@ -1,0 +1,29 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_newuserdata - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fBm\fP]
+.SH SYNOPSIS
+void *lua_newuserdata (lua_State *L, size_t size);
+
+.SH DESCRIPTION
+
+.sp
+This function allocates a new block of memory with the given size,
+pushes onto the stack a new full userdata with the block address,
+and returns this address.
+
+.sp
+Userdata represent C values in Lua.
+A \fBfull userdata\fP represents a block of memory.
+It is an object (like a table):
+you must create it, it can have its own metatable,
+and you can detect when it is being collected.
+A full userdata is only equal to itself (under raw equality).
+
+.sp
+When Lua collects a full userdata with a \fBgc\fP metamethod,
+Lua calls the metamethod and marks the userdata as finalized.
+When this userdata is collected again then
+Lua frees its corresponding memory.

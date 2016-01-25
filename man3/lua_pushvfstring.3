@@ -1,0 +1,14 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_pushvfstring - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fBm\fP]
+.SH SYNOPSIS
+const char *lua_pushvfstring (lua_State *L, const char *fmt, va_list argp);
+
+.SH DESCRIPTION
+
+.sp
+Equivalent to \fBlua_pushfstring\fP, except that it receives a \fBva_list\fP
+instead of a variable number of arguments.

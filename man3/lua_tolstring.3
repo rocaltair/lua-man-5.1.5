@@ -1,0 +1,32 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_tolstring - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBm\fP]
+.SH SYNOPSIS
+const char *lua_tolstring (lua_State *L, int index, size_t *len);
+
+.SH DESCRIPTION
+
+.sp
+Converts the Lua value at the given acceptable index to a C string.
+If \fBlen\fP is not \fBNULL\fP,
+it also sets \fB*len\fP with the string length.
+The Lua value must be a string or a number;
+otherwise, the function returns \fBNULL\fP.
+If the value is a number,
+then \fBlua_tolstring\fP also
+\fBchanges the actual value in the stack to a string\fP.
+(This change confuses \fBlua_next\fP
+when \fBlua_tolstring\fP is applied to keys during a table traversal.)
+
+.sp
+\fBlua_tolstring\fP returns a fully aligned pointer
+to a string inside the Lua state.
+This string always has a zero ('\fB\0\fP')
+after its last character (as in C),
+but can contain other zeros in its body.
+Because Lua has garbage collection,
+there is no guarantee that the pointer returned by \fBlua_tolstring\fP
+will be valid after the corresponding value is removed from the stack.

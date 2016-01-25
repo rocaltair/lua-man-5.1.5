@@ -1,0 +1,3601 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_Alloc - liblua API documentation
+
+.SH SYNOPSIS
+typedef void * (*lua_Alloc) (void *ud, void *ptr, size_t osize, size_t nsize);
+
+.SH DESCRIPTION
+
+.sp
+The type of the memory-allocation function used by Lua
+states.
+The allocator function must provide a
+functionality similar to \fBrealloc\fP,
+but not exactly the same.
+Its arguments are
+\fBud\fP, an opaque pointer passed to \fBlua_newstate\fP;
+\fBptr\fP, a pointer to the block being allocated/reallocated/freed;
+\fBosize\fP, the original size of the block;
+\fBnsize\fP, the new size of the block.
+\fBptr\fP is \fBNULL\fP if and only if \fBosize\fP is zero.
+When \fBnsize\fP is zero, the allocator must return \fBNULL\fP;
+if \fBosize\fP is not zero,
+it should free the block pointed to by \fBptr\fP.
+When \fBnsize\fP is not zero, the allocator returns \fBNULL\fP
+if and only if it cannot fill the request.
+When \fBnsize\fP is not zero and \fBosize\fP is zero,
+the allocator should behave like \fBmalloc\fP.
+When \fBnsize\fP and \fBosize\fP are not zero,
+the allocator behaves like \fBrealloc\fP.
+Lua assumes that the allocator never fails when
+\fBosize >= nsize\fP.
+
+.sp
+Here is a simple implementation for the allocator function.
+It is used in the auxiliary library by \fBluaL_newstate\fP.
+
+.ft C
+     static void *l_alloc (void *ud, void *ptr, size_t osize,
+                                                size_t nsize) {
+       (void)ud;  (void)osize;  /* not used */
+       if (nsize == 0) {
+         free(ptr);
+         return NULL;
+       }
+       else
+         return realloc(ptr, nsize);
+     }
+.ft P
+
+.sp
+This code assumes
+that \fBfree(NULL)\fP has no effect and that
+\fBrealloc(NULL, size)\fP is equivalent to \fBmalloc(size)\fP.
+ANSI C ensures both behaviors.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_atpanic - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+lua_CFunction lua_atpanic (lua_State *L, lua_CFunction panicf);
+
+.SH DESCRIPTION
+
+.sp
+Sets a new panic function and returns the old one.
+
+.sp
+If an error happens outside any protected environment,
+Lua calls a \fBpanic function\fP
+and then calls \fBexit(EXIT_FAILURE)\fP,
+thus exiting the host application.
+Your panic function can avoid this exit by
+never returning (e.g., doing a long jump).
+
+.sp
+The panic function can access the error message at the top of the stack.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_call - liblua API documentation
+
+.SH PROPERTIES
+[-(nargs + 1), +nresults, \fBe\fP]
+.SH SYNOPSIS
+void lua_call (lua_State *L, int nargs, int nresults);
+
+.SH DESCRIPTION
+
+.sp
+Calls a function.
+
+.sp
+To call a function you must use the following protocol:
+first, the function to be called is pushed onto the stack;
+then, the arguments to the function are pushed
+in direct order;
+that is, the first argument is pushed first.
+Finally you call \fBlua_call\fP;
+\fBnargs\fP is the number of arguments that you pushed onto the stack.
+All arguments and the function value are popped from the stack
+when the function is called.
+The function results are pushed onto the stack when the function returns.
+The number of results is adjusted to \fBnresults\fP,
+unless \fBnresults\fP is \fBLUA_MULTRET\fP.
+In this case, \fBall\fP results from the function are pushed.
+Lua takes care that the returned values fit into the stack space.
+The function results are pushed onto the stack in direct order
+(the first result is pushed first),
+so that after the call the last result is on the top of the stack.
+
+.sp
+Any error inside the called function is propagated upwards
+(with a \fBlongjmp\fP).
+
+.sp
+The following example shows how the host program can do the
+equivalent to this Lua code:
+
+.ft C
+     a = f("how", t.x, 14)
+.ft P
+
+.sp
+Here it is in C:
+
+.ft C
+     lua_getfield(L, LUA_GLOBALSINDEX, "f"); /* function to be called */
+     lua_pushstring(L, "how");                        /* 1st argument */
+     lua_getfield(L, LUA_GLOBALSINDEX, "t");   /* table to be indexed */
+     lua_getfield(L, -1, "x");        /* push result of t.x (2nd arg) */
+     lua_remove(L, -2);                  /* remove 't' from the stack */
+     lua_pushinteger(L, 14);                          /* 3rd argument */
+     lua_call(L, 3, 1);     /* call 'f' with 3 arguments and 1 result */
+     lua_setfield(L, LUA_GLOBALSINDEX, "a");        /* set global 'a' */
+Note that the code above is "balanced":
+at its end, the stack is back to its original configuration.
+This is considered good programming practice.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_CFunction - liblua API documentation
+
+.SH SYNOPSIS
+typedef int (*lua_CFunction) (lua_State *L);
+
+.SH DESCRIPTION
+
+.sp
+Type for C functions.
+
+.sp
+In order to communicate properly with Lua,
+a C function must use the following protocol,
+which defines the way parameters and results are passed:
+a C function receives its arguments from Lua in its stack
+in direct order (the first argument is pushed first).
+So, when the function starts,
+\fBlua_gettop(L)\fP returns the number of arguments received by the function.
+The first argument (if any) is at index 1
+and its last argument is at index \fBlua_gettop(L)\fP.
+To return values to Lua, a C function just pushes them onto the stack,
+in direct order (the first result is pushed first),
+and returns the number of results.
+Any other value in the stack below the results will be properly
+discarded by Lua.
+Like a Lua function, a C function called by Lua can also return
+many results.
+
+.sp
+As an example, the following function receives a variable number
+of numerical arguments and returns their average and sum:
+
+.ft C
+     static int foo (lua_State *L) {
+       int n = lua_gettop(L);    /* number of arguments */
+       lua_Number sum = 0;
+       int i;
+       for (i = 1; i <= n; i++) {
+         if (!lua_isnumber(L, i)) {
+           lua_pushstring(L, "incorrect argument");
+           lua_error(L);
+         }
+         sum += lua_tonumber(L, i);
+       }
+       lua_pushnumber(L, sum/n);        /* first result */
+       lua_pushnumber(L, sum);         /* second result */
+       return 2;                   /* number of results */
+     }
+.ft P
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_checkstack - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBm\fP]
+.SH SYNOPSIS
+int lua_checkstack (lua_State *L, int extra);
+
+.SH DESCRIPTION
+
+.sp
+Ensures that there are at least \fBextra\fP free stack slots in the stack.
+It returns false if it cannot grow the stack to that size.
+This function never shrinks the stack;
+if the stack is already larger than the new size,
+it is left unchanged.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_close - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+void lua_close (lua_State *L);
+
+.SH DESCRIPTION
+
+.sp
+Destroys all objects in the given Lua state
+(calling the corresponding garbage-collection metamethods, if any)
+and frees all dynamic memory used by this state.
+On several platforms, you may not need to call this function,
+because all resources are naturally released when the host program ends.
+On the other hand, long-running programs,
+such as a daemon or a web server,
+might need to release states as soon as they are not needed,
+to avoid growing too large.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_concat - liblua API documentation
+
+.SH PROPERTIES
+[-n, +1, \fBe\fP]
+.SH SYNOPSIS
+void lua_concat (lua_State *L, int n);
+
+.SH DESCRIPTION
+
+.sp
+Concatenates the \fBn\fP values at the top of the stack,
+pops them, and leaves the result at the top.
+If \fBn\fP is 1, the result is the single value on the stack
+(that is, the function does nothing);
+if \fBn\fP is 0, the result is the empty string.
+Concatenation is performed following the usual semantics of Lua
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_cpcall - liblua API documentation
+
+.SH PROPERTIES
+[-0, +(0|1), \fB-\fP]
+.SH SYNOPSIS
+int lua_cpcall (lua_State *L, lua_CFunction func, void *ud);
+
+.SH DESCRIPTION
+
+.sp
+Calls the C function \fBfunc\fP in protected mode.
+\fBfunc\fP starts with only one element in its stack,
+a light userdata containing \fBud\fP.
+In case of errors,
+\fBlua_cpcall\fP returns the same error codes as \fBlua_pcall\fP,
+plus the error object on the top of the stack;
+otherwise, it returns zero, and does not change the stack.
+All values returned by \fBfunc\fP are discarded.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_createtable - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fBm\fP]
+.SH SYNOPSIS
+void lua_createtable (lua_State *L, int narr, int nrec);
+
+.SH DESCRIPTION
+
+.sp
+Creates a new empty table and pushes it onto the stack.
+The new table has space pre-allocated
+for \fBnarr\fP array elements and \fBnrec\fP non-array elements.
+This pre-allocation is useful when you know exactly how many elements
+the table will have.
+Otherwise you can use the function \fBlua_newtable\fP.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_dump - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBm\fP]
+.SH SYNOPSIS
+int lua_dump (lua_State *L, lua_Writer writer, void *data);
+
+.SH DESCRIPTION
+
+.sp
+Dumps a function as a binary chunk.
+Receives a Lua function on the top of the stack
+and produces a binary chunk that,
+if loaded again,
+results in a function equivalent to the one dumped.
+As it produces parts of the chunk,
+\fBlua_dump\fP calls function \fBwriter\fP (see \fBlua_Writer\fP)
+with the given \fBdata\fP
+to write them.
+
+.sp
+The value returned is the error code returned by the last
+call to the writer;
+0 means no errors.
+
+.sp
+This function does not pop the Lua function from the stack.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_equal - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBe\fP]
+.SH SYNOPSIS
+int lua_equal (lua_State *L, int index1, int index2);
+
+.SH DESCRIPTION
+
+.sp
+Returns 1 if the two values in acceptable indices \fBindex1\fP and
+\fBindex2\fP are equal,
+following the semantics of the Lua \fB==\fP operator
+(that is, may call metamethods).
+Otherwise returns 0.
+Also returns 0 if any of the indices is non valid.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_error - liblua API documentation
+
+.SH PROPERTIES
+[-1, +0, \fBv\fP]
+.SH SYNOPSIS
+int lua_error (lua_State *L);
+
+.SH DESCRIPTION
+
+.sp
+Generates a Lua error.
+The error message (which can actually be a Lua value of any type)
+must be on the stack top.
+This function does a long jump,
+and therefore never returns.
+(see \fBluaL_error\fP).
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_gc - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBe\fP]
+.SH SYNOPSIS
+int lua_gc (lua_State *L, int what, int data);
+
+.SH DESCRIPTION
+
+.sp
+Controls the garbage collector.
+
+.sp
+This function performs several tasks,
+according to the value of the parameter \fBwhat\fP:
+
+.TP
+\fB\fBLUA_GCSTOP\fP:\fP
+stops the garbage collector.
+
+.TP
+\fB\fBLUA_GCRESTART\fP:\fP
+restarts the garbage collector.
+
+.TP
+\fB\fBLUA_GCCOLLECT\fP:\fP
+performs a full garbage-collection cycle.
+
+.TP
+\fB\fBLUA_GCCOUNT\fP:\fP
+returns the current amount of memory (in Kbytes) in use by Lua.
+
+.TP
+\fB\fBLUA_GCCOUNTB\fP:\fP
+returns the remainder of dividing the current amount of bytes of
+memory in use by Lua by 1024.
+
+.TP
+\fB\fBLUA_GCSTEP\fP:\fP
+performs an incremental step of garbage collection.
+The step "size" is controlled by \fBdata\fP
+(larger values mean more steps) in a non-specified way.
+If you want to control the step size
+you must experimentally tune the value of \fBdata\fP.
+The function returns 1 if the step finished a
+garbage-collection cycle.
+
+.TP
+\fB\fBLUA_GCSETPAUSE\fP:\fP
+sets \fBdata\fP as the new value
+for the \fBpause\fP of the collector.
+The function returns the previous value of the pause.
+
+.TP
+\fB\fBLUA_GCSETSTEPMUL\fP:\fP
+sets \fBdata\fP as the new value for the \fBstep multiplier\fP of
+the collector.
+The function returns the previous value of the step multiplier.
+
+.PP
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_getallocf - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+lua_Alloc lua_getallocf (lua_State *L, void **ud);
+
+.SH DESCRIPTION
+
+.sp
+Returns the memory-allocation function of a given state.
+If \fBud\fP is not \fBNULL\fP, Lua stores in \fB*ud\fP the
+opaque pointer passed to \fBlua_newstate\fP.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_getfenv - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fB-\fP]
+.SH SYNOPSIS
+void lua_getfenv (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Pushes onto the stack the environment table of
+the value at the given index.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_getfield - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fBe\fP]
+.SH SYNOPSIS
+void lua_getfield (lua_State *L, int index, const char *k);
+
+.SH DESCRIPTION
+
+.sp
+Pushes onto the stack the value \fBt[k]\fP,
+where \fBt\fP is the value at the given valid index.
+As in Lua, this function may trigger a metamethod
+for the "index" event.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_getglobal - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fBe\fP]
+.SH SYNOPSIS
+void lua_getglobal (lua_State *L, const char *name);
+
+.SH DESCRIPTION
+
+.sp
+Pushes onto the stack the value of the global \fBname\fP.
+It is defined as a macro:
+
+.ft C
+     #define lua_getglobal(L,s)  lua_getfield(L, LUA_GLOBALSINDEX, s)
+.ft P
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_getmetatable - liblua API documentation
+
+.SH PROPERTIES
+[-0, +(0|1), \fB-\fP]
+.SH SYNOPSIS
+int lua_getmetatable (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Pushes onto the stack the metatable of the value at the given
+acceptable index.
+If the index is not valid,
+or if the value does not have a metatable,
+the function returns 0 and pushes nothing on the stack.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_gettable - liblua API documentation
+
+.SH PROPERTIES
+[-1, +1, \fBe\fP]
+.SH SYNOPSIS
+void lua_gettable (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Pushes onto the stack the value \fBt[k]\fP,
+where \fBt\fP is the value at the given valid index
+and \fBk\fP is the value at the top of the stack.
+
+.sp
+This function pops the key from the stack
+(putting the resulting value in its place).
+As in Lua, this function may trigger a metamethod
+for the "index" event.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_gettop - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+int lua_gettop (lua_State *L);
+
+.SH DESCRIPTION
+
+.sp
+Returns the index of the top element in the stack.
+Because indices start at 1,
+this result is equal to the number of elements in the stack
+(and so 0 means an empty stack).
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_insert - liblua API documentation
+
+.SH PROPERTIES
+[-1, +1, \fB-\fP]
+.SH SYNOPSIS
+void lua_insert (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Moves the top element into the given valid index,
+shifting up the elements above this index to open space.
+Cannot be called with a pseudo-index,
+because a pseudo-index is not an actual stack position.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_Integer - liblua API documentation
+
+.SH SYNOPSIS
+typedef ptrdiff_t lua_Integer;
+
+.SH DESCRIPTION
+
+.sp
+The type used by the Lua API to represent integral values.
+
+.sp
+By default it is a \fBptrdiff_t\fP,
+which is usually the largest signed integral type the machine handles
+"comfortably".
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_isboolean - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+int lua_isboolean (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Returns 1 if the value at the given acceptable index has type boolean,
+and 0 otherwise.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_iscfunction - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+int lua_iscfunction (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Returns 1 if the value at the given acceptable index is a C function,
+and 0 otherwise.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_isfunction - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+int lua_isfunction (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Returns 1 if the value at the given acceptable index is a function
+(either C or Lua), and 0 otherwise.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_islightuserdata - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+int lua_islightuserdata (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Returns 1 if the value at the given acceptable index is a light userdata,
+and 0 otherwise.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_isnil - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+int lua_isnil (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Returns 1 if the value at the given acceptable index is \fBnil\fP,
+and 0 otherwise.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_isnone - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+int lua_isnone (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Returns 1 if the given acceptable index is not valid
+(that is, it refers to an element outside the current stack),
+and 0 otherwise.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_isnoneornil - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+int lua_isnoneornil (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Returns 1 if the given acceptable index is not valid
+(that is, it refers to an element outside the current stack)
+or if the value at this index is \fBnil\fP,
+and 0 otherwise.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_isnumber - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+int lua_isnumber (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Returns 1 if the value at the given acceptable index is a number
+or a string convertible to a number,
+and 0 otherwise.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_isstring - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+int lua_isstring (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Returns 1 if the value at the given acceptable index is a string
+or a number (which is always convertible to a string),
+and 0 otherwise.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_istable - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+int lua_istable (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Returns 1 if the value at the given acceptable index is a table,
+and 0 otherwise.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_isthread - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+int lua_isthread (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Returns 1 if the value at the given acceptable index is a thread,
+and 0 otherwise.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_isuserdata - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+int lua_isuserdata (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Returns 1 if the value at the given acceptable index is a userdata
+(either full or light), and 0 otherwise.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_lessthan - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBe\fP]
+.SH SYNOPSIS
+int lua_lessthan (lua_State *L, int index1, int index2);
+
+.SH DESCRIPTION
+
+.sp
+Returns 1 if the value at acceptable index \fBindex1\fP is smaller
+than the value at acceptable index \fBindex2\fP,
+following the semantics of the Lua \fB<\fP operator
+(that is, may call metamethods).
+Otherwise returns 0.
+Also returns 0 if any of the indices is non valid.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_load - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fB-\fP]
+.SH SYNOPSIS
+int lua_load (lua_State *L, lua_Reader reader, void *data, const char *chunkname);
+
+.SH DESCRIPTION
+
+.sp
+Loads a Lua chunk.
+If there are no errors,
+\fBlua_load\fP pushes the compiled chunk as a Lua
+function on top of the stack.
+Otherwise, it pushes an error message.
+The return values of \fBlua_load\fP are:
+
+.TP
+\fB0:\fP no errors;
+
+.TP
+\fB\fBLUA_ERRSYNTAX\fP:\fP
+syntax error during pre-compilation;
+
+.TP
+\fB\fBLUA_ERRMEM\fP:\fP
+memory allocation error.
+
+.PP
+
+.sp
+This function only loads a chunk;
+it does not run it.
+
+.sp
+\fBlua_load\fP automatically detects whether the chunk is text or binary,
+and loads it accordingly (see program \fBluac\fP).
+
+.sp
+The \fBlua_load\fP function uses a user-supplied \fBreader\fP function
+to read the chunk (see \fBlua_Reader\fP).
+The \fBdata\fP argument is an opaque value passed to the reader function.
+
+.sp
+The \fBchunkname\fP argument gives a name to the chunk,
+which is used for error messages and in debug information.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_newstate - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+lua_State *lua_newstate (lua_Alloc f, void *ud);
+
+.SH DESCRIPTION
+
+.sp
+Creates a new, independent state.
+Returns \fBNULL\fP if cannot create the state
+(due to lack of memory).
+The argument \fBf\fP is the allocator function;
+Lua does all memory allocation for this state through this function.
+The second argument, \fBud\fP, is an opaque pointer that Lua
+simply passes to the allocator in every call.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_newtable - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fBm\fP]
+.SH SYNOPSIS
+void lua_newtable (lua_State *L);
+
+.SH DESCRIPTION
+
+.sp
+Creates a new empty table and pushes it onto the stack.
+It is equivalent to \fBlua_createtable(L, 0, 0)\fP.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_newthread - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fBm\fP]
+.SH SYNOPSIS
+lua_State *lua_newthread (lua_State *L);
+
+.SH DESCRIPTION
+
+.sp
+Creates a new thread, pushes it on the stack,
+and returns a pointer to a \fBlua_State\fP that represents this new thread.
+The new state returned by this function shares with the original state
+all global objects (such as tables),
+but has an independent execution stack.
+
+.sp
+There is no explicit function to close or to destroy a thread.
+Threads are subject to garbage collection,
+like any Lua object.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_newuserdata - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fBm\fP]
+.SH SYNOPSIS
+void *lua_newuserdata (lua_State *L, size_t size);
+
+.SH DESCRIPTION
+
+.sp
+This function allocates a new block of memory with the given size,
+pushes onto the stack a new full userdata with the block address,
+and returns this address.
+
+.sp
+Userdata represent C values in Lua.
+A \fBfull userdata\fP represents a block of memory.
+It is an object (like a table):
+you must create it, it can have its own metatable,
+and you can detect when it is being collected.
+A full userdata is only equal to itself (under raw equality).
+
+.sp
+When Lua collects a full userdata with a \fBgc\fP metamethod,
+Lua calls the metamethod and marks the userdata as finalized.
+When this userdata is collected again then
+Lua frees its corresponding memory.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_next - liblua API documentation
+
+.SH PROPERTIES
+[-1, +(2|0), \fBe\fP]
+.SH SYNOPSIS
+int lua_next (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Pops a key from the stack,
+and pushes a key-value pair from the table at the given index
+(the "next" pair after the given key).
+If there are no more elements in the table,
+then \fBlua_next\fP returns 0 (and pushes nothing).
+
+.sp
+A typical traversal looks like this:
+
+.ft C
+     /* table is in the stack at index 't' */
+     lua_pushnil(L);  /* first key */
+     while (lua_next(L, t) != 0) {
+       /* uses 'key' (at index -2) and 'value' (at index -1) */
+       printf("%s - %s\n",
+              lua_typename(L, lua_type(L, -2)),
+              lua_typename(L, lua_type(L, -1)));
+       /* removes 'value'; keeps 'key' for next iteration */
+       lua_pop(L, 1);
+     }
+.ft P
+
+.sp
+While traversing a table,
+do not call \fBlua_tolstring\fP directly on a key,
+unless you know that the key is actually a string.
+Recall that \fBlua_tolstring\fP \fBchanges\fP
+the value at the given index;
+this confuses the next call to \fBlua_next\fP.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_Number - liblua API documentation
+
+.SH SYNOPSIS
+typedef double lua_Number;
+
+.SH DESCRIPTION
+
+.sp
+The type of numbers in Lua.
+By default, it is double, but that can be changed in \fBluaconf.h\fP.
+
+.sp
+Through the configuration file you can change
+Lua to operate with another type for numbers (e.g., float or long).
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_objlen - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+size_t lua_objlen (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Returns the "length" of the value at the given acceptable index:
+for strings, this is the string length;
+for tables, this is the result of the length operator ('\fB#\fP');
+for userdata, this is the size of the block of memory allocated
+for the userdata;
+for other values, it is 0.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_pcall - liblua API documentation
+
+.SH PROPERTIES
+[-(nargs + 1), +(nresults|1), \fB-\fP]
+.SH SYNOPSIS
+int lua_pcall (lua_State *L, int nargs, int nresults, int errfunc);
+
+.SH DESCRIPTION
+
+.sp
+Calls a function in protected mode.
+
+.sp
+Both \fBnargs\fP and \fBnresults\fP have the same meaning as
+in \fBlua_call\fP.
+If there are no errors during the call,
+\fBlua_pcall\fP behaves exactly like \fBlua_call\fP.
+However, if there is any error,
+\fBlua_pcall\fP catches it,
+pushes a single value on the stack (the error message),
+and returns an error code.
+Like \fBlua_call\fP,
+\fBlua_pcall\fP always removes the function
+and its arguments from the stack.
+
+.sp
+If \fBerrfunc\fP is 0,
+then the error message returned on the stack
+is exactly the original error message.
+Otherwise, \fBerrfunc\fP is the stack index of an
+\fBerror handler function\fP.
+(In the current implementation, this index cannot be a pseudo-index.)
+In case of runtime errors,
+this function will be called with the error message
+and its return value will be the message returned on the stack by \fBlua_pcall\fP.
+
+.sp
+Typically, the error handler function is used to add more debug
+information to the error message, such as a stack traceback.
+Such information cannot be gathered after the return of \fBlua_pcall\fP,
+since by then the stack has unwound.
+
+.sp
+The \fBlua_pcall\fP function returns 0 in case of success
+or one of the following error codes
+(defined in \fBlua.h\fP):
+
+.TP
+\fB\fBLUA_ERRRUN\fP:\fP
+a runtime error.
+
+.TP
+\fB\fBLUA_ERRMEM\fP:\fP
+memory allocation error.
+For such errors, Lua does not call the error handler function.
+
+.TP
+\fB\fBLUA_ERRERR\fP:\fP
+error while running the error handler function.
+
+.PP
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_pop - liblua API documentation
+
+.SH PROPERTIES
+[-n, +0, \fB-\fP]
+.SH SYNOPSIS
+void lua_pop (lua_State *L, int n);
+
+.SH DESCRIPTION
+
+.sp
+Pops \fBn\fP elements from the stack.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_pushboolean - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fB-\fP]
+.SH SYNOPSIS
+void lua_pushboolean (lua_State *L, int b);
+
+.SH DESCRIPTION
+
+.sp
+Pushes a boolean value with value \fBb\fP onto the stack.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_pushcclosure - liblua API documentation
+
+.SH PROPERTIES
+[-n, +1, \fBm\fP]
+.SH SYNOPSIS
+void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n);
+
+.SH DESCRIPTION
+
+.sp
+Pushes a new C closure onto the stack.
+
+.sp
+When a C function is created,
+it is possible to associate some values with it,
+thus creating a C closure;
+these values are then accessible to the function whenever it is called.
+To associate values with a C function,
+first these values should be pushed onto the stack
+(when there are multiple values, the first value is pushed first).
+Then \fBlua_pushcclosure\fP
+is called to create and push the C function onto the stack,
+with the argument \fBn\fP telling how many values should be
+associated with the function.
+\fBlua_pushcclosure\fP also pops these values from the stack.
+
+.sp
+The maximum value for \fBn\fP is 255.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_pushcfunction - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fBm\fP]
+.SH SYNOPSIS
+void lua_pushcfunction (lua_State *L, lua_CFunction f);
+
+.SH DESCRIPTION
+
+.sp
+Pushes a C function onto the stack.
+This function receives a pointer to a C function
+and pushes onto the stack a Lua value of type \fBfunction\fP that,
+when called, invokes the corresponding C function.
+
+.sp
+Any function to be registered in Lua must
+follow the correct protocol to receive its parameters
+and return its results (see \fBlua_CFunction\fP).
+
+.sp
+\fBlua_pushcfunction\fP is defined as a macro:
+
+.ft C
+     #define lua_pushcfunction(L,f)  lua_pushcclosure(L,f,0)
+.ft P
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_pushfstring - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fBm\fP]
+.SH SYNOPSIS
+const char *lua_pushfstring (lua_State *L, const char *fmt, ...);
+
+.SH DESCRIPTION
+
+.sp
+Pushes onto the stack a formatted string
+and returns a pointer to this string.
+It is similar to the C function \fBsprintf\fP,
+but has some important differences:
+
+.TP
+
+You do not have to allocate space for the result:
+the result is a Lua string and Lua takes care of memory allocation
+(and deallocation, through garbage collection).
+
+.TP
+
+The conversion specifiers are quite restricted.
+There are no flags, widths, or precisions.
+The conversion specifiers can only be
+'\fB%%\fP' (inserts a '\fB%\fP' in the string),
+'\fB%s\fP' (inserts a zero-terminated string, with no size restrictions),
+'\fB%f\fP' (inserts a \fBlua_Number\fP),
+'\fB%p\fP' (inserts a pointer as a hexadecimal numeral),
+'\fB%d\fP' (inserts an \fBint\fP), and
+'\fB%c\fP' (inserts an \fBint\fP as a character).
+
+.PP
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_pushinteger - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fB-\fP]
+.SH SYNOPSIS
+void lua_pushinteger (lua_State *L, lua_Integer n);
+
+.SH DESCRIPTION
+
+.sp
+Pushes a number with value \fBn\fP onto the stack.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_pushlightuserdata - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fB-\fP]
+.SH SYNOPSIS
+void lua_pushlightuserdata (lua_State *L, void *p);
+
+.SH DESCRIPTION
+
+.sp
+Pushes a light userdata onto the stack.
+
+.sp
+Userdata represent C values in Lua.
+A \fBlight userdata\fP represents a pointer.
+It is a value (like a number):
+you do not create it, it has no individual metatable,
+and it is not collected (as it was never created).
+A light userdata is equal to "any"
+light userdata with the same C address.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_pushliteral - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fBm\fP]
+.SH SYNOPSIS
+void lua_pushliteral (lua_State *L, const char *s);
+
+.SH DESCRIPTION
+
+.sp
+This macro is equivalent to \fBlua_pushlstring\fP,
+but can be used only when \fBs\fP is a literal string.
+In these cases, it automatically provides the string length.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_pushlstring - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fBm\fP]
+.SH SYNOPSIS
+void lua_pushlstring (lua_State *L, const char *s, size_t len);
+
+.SH DESCRIPTION
+
+.sp
+Pushes the string pointed to by \fBs\fP with size \fBlen\fP
+onto the stack.
+Lua makes (or reuses) an internal copy of the given string,
+so the memory at \fBs\fP can be freed or reused immediately after
+the function returns.
+The string can contain embedded zeros.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_pushnil - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fB-\fP]
+.SH SYNOPSIS
+void lua_pushnil (lua_State *L);
+
+.SH DESCRIPTION
+
+.sp
+Pushes a nil value onto the stack.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_pushnumber - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fB-\fP]
+.SH SYNOPSIS
+void lua_pushnumber (lua_State *L, lua_Number n);
+
+.SH DESCRIPTION
+
+.sp
+Pushes a number with value \fBn\fP onto the stack.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_pushstring - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fBm\fP]
+.SH SYNOPSIS
+void lua_pushstring (lua_State *L, const char *s);
+
+.SH DESCRIPTION
+
+.sp
+Pushes the zero-terminated string pointed to by \fBs\fP
+onto the stack.
+Lua makes (or reuses) an internal copy of the given string,
+so the memory at \fBs\fP can be freed or reused immediately after
+the function returns.
+The string cannot contain embedded zeros;
+it is assumed to end at the first zero.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_pushthread - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fB-\fP]
+.SH SYNOPSIS
+int lua_pushthread (lua_State *L);
+
+.SH DESCRIPTION
+
+.sp
+Pushes the thread represented by \fBL\fP onto the stack.
+Returns 1 if this thread is the main thread of its state.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_pushvalue - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fB-\fP]
+.SH SYNOPSIS
+void lua_pushvalue (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Pushes a copy of the element at the given valid index
+onto the stack.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_pushvfstring - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fBm\fP]
+.SH SYNOPSIS
+const char *lua_pushvfstring (lua_State *L, const char *fmt, va_list argp);
+
+.SH DESCRIPTION
+
+.sp
+Equivalent to \fBlua_pushfstring\fP, except that it receives a \fBva_list\fP
+instead of a variable number of arguments.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_rawequal - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+int lua_rawequal (lua_State *L, int index1, int index2);
+
+.SH DESCRIPTION
+
+.sp
+Returns 1 if the two values in acceptable indices \fBindex1\fP and
+\fBindex2\fP are primitively equal
+(that is, without calling metamethods).
+Otherwise returns 0.
+Also returns 0 if any of the indices are non valid.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_rawget - liblua API documentation
+
+.SH PROPERTIES
+[-1, +1, \fB-\fP]
+.SH SYNOPSIS
+void lua_rawget (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Similar to \fBlua_gettable\fP, but does a raw access
+(i.e., without metamethods).
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_rawgeti - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fB-\fP]
+.SH SYNOPSIS
+void lua_rawgeti (lua_State *L, int index, int n);
+
+.SH DESCRIPTION
+
+.sp
+Pushes onto the stack the value \fBt[n]\fP,
+where \fBt\fP is the value at the given valid index.
+The access is raw;
+that is, it does not invoke metamethods.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_rawset - liblua API documentation
+
+.SH PROPERTIES
+[-2, +0, \fBm\fP]
+.SH SYNOPSIS
+void lua_rawset (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Similar to \fBlua_settable\fP, but does a raw assignment
+(i.e., without metamethods).
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_rawseti - liblua API documentation
+
+.SH PROPERTIES
+[-1, +0, \fBm\fP]
+.SH SYNOPSIS
+void lua_rawseti (lua_State *L, int index, int n);
+
+.SH DESCRIPTION
+
+.sp
+Does the equivalent of \fBt[n] = v\fP,
+where \fBt\fP is the value at the given valid index
+and \fBv\fP is the value at the top of the stack.
+
+.sp
+This function pops the value from the stack.
+The assignment is raw;
+that is, it does not invoke metamethods.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_Reader - liblua API documentation
+
+.SH SYNOPSIS
+typedef const char * (*lua_Reader) (lua_State *L, void *data, size_t *size);
+
+.SH DESCRIPTION
+
+.sp
+The reader function used by \fBlua_load\fP.
+Every time it needs another piece of the chunk,
+\fBlua_load\fP calls the reader,
+passing along its \fBdata\fP parameter.
+The reader must return a pointer to a block of memory
+with a new piece of the chunk
+and set \fBsize\fP to the block size.
+The block must exist until the reader function is called again.
+To signal the end of the chunk,
+the reader must return \fBNULL\fP or set \fBsize\fP to zero.
+The reader function may return pieces of any size greater than zero.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_register - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBe\fP]
+.SH SYNOPSIS
+void lua_register (lua_State *L, const char *name, lua_CFunction f);
+
+.SH DESCRIPTION
+
+.sp
+Sets the C function \fBf\fP as the new value of global \fBname\fP.
+It is defined as a macro:
+
+.ft C
+     #define lua_register(L,n,f) \
+            (lua_pushcfunction(L, f), lua_setglobal(L, n))
+.ft P
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_remove - liblua API documentation
+
+.SH PROPERTIES
+[-1, +0, \fB-\fP]
+.SH SYNOPSIS
+void lua_remove (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Removes the element at the given valid index,
+shifting down the elements above this index to fill the gap.
+Cannot be called with a pseudo-index,
+because a pseudo-index is not an actual stack position.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_replace - liblua API documentation
+
+.SH PROPERTIES
+[-1, +0, \fB-\fP]
+.SH SYNOPSIS
+void lua_replace (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Moves the top element into the given position (and pops it),
+without shifting any element
+(therefore replacing the value at the given position).
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_resume - liblua API documentation
+
+.SH PROPERTIES
+[-?, +?, \fB-\fP]
+.SH SYNOPSIS
+int lua_resume (lua_State *L, int narg);
+
+.SH DESCRIPTION
+
+.sp
+Starts and resumes a coroutine in a given thread.
+
+.sp
+To start a coroutine, you first create a new thread
+(see \fBlua_newthread\fP);
+then you push onto its stack the main function plus any arguments;
+then you call \fBlua_resume\fP,
+with \fBnarg\fP being the number of arguments.
+This call returns when the coroutine suspends or finishes its execution.
+When it returns, the stack contains all values passed to \fBlua_yield\fP,
+or all values returned by the body function.
+\fBlua_resume\fP returns
+\fBLUA_YIELD\fP if the coroutine yields,
+0 if the coroutine finishes its execution
+without errors,
+or an error code in case of errors (see \fBlua_pcall\fP).
+In case of errors,
+the stack is not unwound,
+so you can use the debug API over it.
+The error message is on the top of the stack.
+To restart a coroutine, you put on its stack only the values to
+be passed as results from \fByield\fP,
+and then call \fBlua_resume\fP.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_setallocf - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+void lua_setallocf (lua_State *L, lua_Alloc f, void *ud);
+
+.SH DESCRIPTION
+
+.sp
+Changes the allocator function of a given state to \fBf\fP
+with user data \fBud\fP.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_setfenv - liblua API documentation
+
+.SH PROPERTIES
+[-1, +0, \fB-\fP]
+.SH SYNOPSIS
+int lua_setfenv (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Pops a table from the stack and sets it as
+the new environment for the value at the given index.
+If the value at the given index is
+neither a function nor a thread nor a userdata,
+\fBlua_setfenv\fP returns 0.
+Otherwise it returns 1.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_setfield - liblua API documentation
+
+.SH PROPERTIES
+[-1, +0, \fBe\fP]
+.SH SYNOPSIS
+void lua_setfield (lua_State *L, int index, const char *k);
+
+.SH DESCRIPTION
+
+.sp
+Does the equivalent to \fBt[k] = v\fP,
+where \fBt\fP is the value at the given valid index
+and \fBv\fP is the value at the top of the stack.
+
+.sp
+This function pops the value from the stack.
+As in Lua, this function may trigger a metamethod
+for the "newindex" event.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_setglobal - liblua API documentation
+
+.SH PROPERTIES
+[-1, +0, \fBe\fP]
+.SH SYNOPSIS
+void lua_setglobal (lua_State *L, const char *name);
+
+.SH DESCRIPTION
+
+.sp
+Pops a value from the stack and
+sets it as the new value of global \fBname\fP.
+It is defined as a macro:
+
+.ft C
+     #define lua_setglobal(L,s)   lua_setfield(L, LUA_GLOBALSINDEX, s)
+.ft P
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_setmetatable - liblua API documentation
+
+.SH PROPERTIES
+[-1, +0, \fB-\fP]
+.SH SYNOPSIS
+int lua_setmetatable (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Pops a table from the stack and
+sets it as the new metatable for the value at the given
+acceptable index.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_settable - liblua API documentation
+
+.SH PROPERTIES
+[-2, +0, \fBe\fP]
+.SH SYNOPSIS
+void lua_settable (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Does the equivalent to \fBt[k] = v\fP,
+where \fBt\fP is the value at the given valid index,
+\fBv\fP is the value at the top of the stack,
+and \fBk\fP is the value just below the top.
+
+.sp
+This function pops both the key and the value from the stack.
+As in Lua, this function may trigger a metamethod
+for the "newindex" event.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_settop - liblua API documentation
+
+.SH PROPERTIES
+[-?, +?, \fB-\fP]
+.SH SYNOPSIS
+void lua_settop (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Accepts any acceptable index, or 0,
+and sets the stack top to this index.
+If the new top is larger than the old one,
+then the new elements are filled with \fBnil\fP.
+If \fBindex\fP is 0, then all stack elements are removed.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_State - liblua API documentation
+
+.SH SYNOPSIS
+typedef struct lua_State lua_State;
+
+.SH DESCRIPTION
+
+.sp
+Opaque structure that keeps the whole state of a Lua interpreter.
+The Lua library is fully reentrant:
+it has no global variables.
+All information about a state is kept in this structure.
+
+.sp
+A pointer to this state must be passed as the first argument to
+every function in the library, except to \fBlua_newstate\fP,
+which creates a Lua state from scratch.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_status - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+int lua_status (lua_State *L);
+
+.SH DESCRIPTION
+
+.sp
+Returns the status of the thread \fBL\fP.
+
+.sp
+The status can be 0 for a normal thread,
+an error code if the thread finished its execution with an error,
+or \fBLUA_YIELD\fP if the thread is suspended.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_toboolean - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+int lua_toboolean (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Converts the Lua value at the given acceptable index to a C boolean
+value (0 or 1).
+Like all tests in Lua,
+\fBlua_toboolean\fP returns 1 for any Lua value
+different from \fBfalse\fP and \fBnil\fP;
+otherwise it returns 0.
+It also returns 0 when called with a non-valid index.
+(If you want to accept only actual boolean values,
+use \fBlua_isboolean\fP to test the value's type.)
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_tocfunction - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+lua_CFunction lua_tocfunction (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Converts a value at the given acceptable index to a C function.
+That value must be a C function;
+otherwise, returns \fBNULL\fP.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_tointeger - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+lua_Integer lua_tointeger (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Converts the Lua value at the given acceptable index
+to the signed integral type \fBlua_Integer\fP.
+The Lua value must be a number or a string convertible to a number;
+otherwise, \fBlua_tointeger\fP returns 0.
+
+.sp
+If the number is not an integer,
+it is truncated in some non-specified way.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_tolstring - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBm\fP]
+.SH SYNOPSIS
+const char *lua_tolstring (lua_State *L, int index, size_t *len);
+
+.SH DESCRIPTION
+
+.sp
+Converts the Lua value at the given acceptable index to a C string.
+If \fBlen\fP is not \fBNULL\fP,
+it also sets \fB*len\fP with the string length.
+The Lua value must be a string or a number;
+otherwise, the function returns \fBNULL\fP.
+If the value is a number,
+then \fBlua_tolstring\fP also
+\fBchanges the actual value in the stack to a string\fP.
+(This change confuses \fBlua_next\fP
+when \fBlua_tolstring\fP is applied to keys during a table traversal.)
+
+.sp
+\fBlua_tolstring\fP returns a fully aligned pointer
+to a string inside the Lua state.
+This string always has a zero ('\fB\0\fP')
+after its last character (as in C),
+but can contain other zeros in its body.
+Because Lua has garbage collection,
+there is no guarantee that the pointer returned by \fBlua_tolstring\fP
+will be valid after the corresponding value is removed from the stack.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_tonumber - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+lua_Number lua_tonumber (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Converts the Lua value at the given acceptable index
+to the C type \fBlua_Number\fP (see \fBlua_Number\fP).
+The Lua value must be a number or a string convertible to a number;
+otherwise, \fBlua_tonumber\fP returns 0.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_topointer - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+const void *lua_topointer (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Converts the value at the given acceptable index to a generic
+C pointer (\fBvoid*\fP).
+The value can be a userdata, a table, a thread, or a function;
+otherwise, \fBlua_topointer\fP returns \fBNULL\fP.
+Different objects will give different pointers.
+There is no way to convert the pointer back to its original value.
+
+.sp
+Typically this function is used only for debug information.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_tostring - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBm\fP]
+.SH SYNOPSIS
+const char *lua_tostring (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Equivalent to \fBlua_tolstring\fP with \fBlen\fP equal to \fBNULL\fP.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_tothread - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+lua_State *lua_tothread (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Converts the value at the given acceptable index to a Lua thread
+(represented as \fBlua_State*\fP).
+This value must be a thread;
+otherwise, the function returns \fBNULL\fP.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_touserdata - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+void *lua_touserdata (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+If the value at the given acceptable index is a full userdata,
+returns its block address.
+If the value is a light userdata,
+returns its pointer.
+Otherwise, returns \fBNULL\fP.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_type - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+int lua_type (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Returns the type of the value in the given acceptable index,
+or \fBLUA_TNONE\fP for a non-valid index
+(that is, an index to an "empty" stack position).
+The types returned by \fBlua_type\fP are coded by the following constants
+defined in \fBlua.h\fP:
+\fBLUA_TNIL\fP,
+\fBLUA_TNUMBER\fP,
+\fBLUA_TBOOLEAN\fP,
+\fBLUA_TSTRING\fP,
+\fBLUA_TTABLE\fP,
+\fBLUA_TFUNCTION\fP,
+\fBLUA_TUSERDATA\fP,
+\fBLUA_TTHREAD\fP,
+and
+\fBLUA_TLIGHTUSERDATA\fP.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_typename - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+const char *lua_typename  (lua_State *L, int tp);
+
+.SH DESCRIPTION
+
+.sp
+Returns the name of the type encoded by the value \fBtp\fP,
+which must be one the values returned by \fBlua_type\fP.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_Writer - liblua API documentation
+
+.SH SYNOPSIS
+typedef int (*lua_Writer) (lua_State *L, const void* p, size_t sz, void* ud);
+
+.SH DESCRIPTION
+
+.sp
+The type of the writer function used by \fBlua_dump\fP.
+Every time it produces another piece of chunk,
+\fBlua_dump\fP calls the writer,
+passing along the buffer to be written (\fBp\fP),
+its size (\fBsz\fP),
+and the \fBdata\fP parameter supplied to \fBlua_dump\fP.
+
+.sp
+The writer returns an error code:
+0 means no errors;
+any other value means an error and stops \fBlua_dump\fP from
+calling the writer again.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_xmove - liblua API documentation
+
+.SH PROPERTIES
+[-?, +?, \fB-\fP]
+.SH SYNOPSIS
+void lua_xmove (lua_State *from, lua_State *to, int n);
+
+.SH DESCRIPTION
+
+.sp
+Exchange values between different threads of the \fBsame\fP global state.
+
+.sp
+This function pops \fBn\fP values from the stack \fBfrom\fP,
+and pushes them onto the stack \fBto\fP.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_yield - liblua API documentation
+
+.SH PROPERTIES
+[-?, +?, \fB-\fP]
+.SH SYNOPSIS
+int lua_yield  (lua_State *L, int nresults);
+
+.SH DESCRIPTION
+
+.sp
+Yields a coroutine.
+
+.sp
+This function should only be called as the
+return expression of a C function, as follows:
+
+.ft C
+     return lua_yield (L, nresults);
+.ft P
+.sp
+When a C function calls \fBlua_yield\fP in that way,
+the running coroutine suspends its execution,
+and the call to \fBlua_resume\fP that started this coroutine returns.
+The parameter \fBnresults\fP is the number of values from the stack
+that are passed as results to \fBlua_resume\fP.
+
+.sp
+Lua has no built-in debugging facilities.
+Instead, it offers a special interface
+by means of functions and \fBhooks\fP.
+This interface allows the construction of different
+kinds of debuggers, profilers, and other tools
+that need "inside information" from the interpreter.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_Debug - liblua API documentation
+
+.ft C
+typedef struct lua_Debug {
+  int event;
+  const char *name;           /* (n) */
+  const char *namewhat;       /* (n) */
+  const char *what;           /* (S) */
+  const char *source;         /* (S) */
+  int currentline;            /* (l) */
+  int nups;                   /* (u) number of upvalues */
+  int linedefined;            /* (S) */
+  int lastlinedefined;        /* (S) */
+  char short_src[LUA_IDSIZE]; /* (S) */
+  /* private part */
+  \fBother fields\fP
+} lua_Debug;
+.ft P
+
+.sp
+A structure used to carry different pieces of
+information about an active function.
+\fBlua_getstack\fP fills only the private part
+of this structure, for later use.
+To fill the other fields of \fBlua_Debug\fP with useful information,
+call \fBlua_getinfo\fP.
+
+.sp
+The fields of \fBlua_Debug\fP have the following meaning:
+
+.TP
+\fB\fBsource\fP:\fP
+If the function was defined in a string,
+then \fBsource\fP is that string.
+If the function was defined in a file,
+then \fBsource\fP starts with a '\fB@\fP' followed by the file name.
+
+.TP
+\fB\fBshort_src\fP:\fP
+a "printable" version of \fBsource\fP, to be used in error messages.
+
+.TP
+\fB\fBlinedefined\fP:\fP
+the line number where the definition of the function starts.
+
+.TP
+\fB\fBlastlinedefined\fP:\fP
+the line number where the definition of the function ends.
+
+.TP
+\fB\fBwhat\fP:\fP
+the string \fB"Lua"\fP if the function is a Lua function,
+\fB"C"\fP if it is a C function,
+\fB"main"\fP if it is the main part of a chunk,
+and \fB"tail"\fP if it was a function that did a tail call.
+In the latter case,
+Lua has no other information about the function.
+
+.TP
+\fB\fBcurrentline\fP:\fP
+the current line where the given function is executing.
+When no line information is available,
+\fBcurrentline\fP is set to -1.
+
+.TP
+\fB\fBname\fP:\fP
+a reasonable name for the given function.
+Because functions in Lua are first-class values,
+they do not have a fixed name:
+some functions can be the value of multiple global variables,
+while others can be stored only in a table field.
+The \fBlua_getinfo\fP function checks how the function was
+called to find a suitable name.
+If it cannot find a name,
+then \fBname\fP is set to \fBNULL\fP.
+
+.TP
+\fB\fBnamewhat\fP:\fP
+explains the \fBname\fP field.
+The value of \fBnamewhat\fP can be
+\fB"global"\fP, \fB"local"\fP, \fB"method"\fP,
+\fB"field"\fP, \fB"upvalue"\fP, or \fB""\fP (the empty string),
+according to how the function was called.
+(Lua uses the empty string when no other option seems to apply.)
+
+.TP
+\fB\fBnups\fP:\fP
+the number of upvalues of the function.
+
+.PP
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_gethook - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+lua_Hook lua_gethook (lua_State *L);
+
+.SH DESCRIPTION
+
+.sp
+Returns the current hook function.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_gethookcount - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+int lua_gethookcount (lua_State *L);
+
+.SH DESCRIPTION
+
+.sp
+Returns the current hook count.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_gethookmask - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+int lua_gethookmask (lua_State *L);
+
+.SH DESCRIPTION
+
+.sp
+Returns the current hook mask.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_getinfo - liblua API documentation
+
+.SH PROPERTIES
+[-(0|1), +(0|1|2), \fBm\fP]
+.SH SYNOPSIS
+int lua_getinfo (lua_State *L, const char *what, lua_Debug *ar);
+
+.SH DESCRIPTION
+
+.sp
+Returns information about a specific function or function invocation.
+
+.sp
+To get information about a function invocation,
+the parameter \fBar\fP must be a valid activation record that was
+filled by a previous call to \fBlua_getstack\fP or
+given as argument to a hook (see \fBlua_Hook\fP).
+
+.sp
+To get information about a function you push it onto the stack
+and start the \fBwhat\fP string with the character '\fB>\fP'.
+(In that case,
+\fBlua_getinfo\fP pops the function in the top of the stack.)
+For instance, to know in which line a function \fBf\fP was defined,
+you can write the following code:
+
+.ft C
+     lua_Debug ar;
+     lua_getfield(L, LUA_GLOBALSINDEX, "f");  /* get global 'f' */
+     lua_getinfo(L, ">S", &ar);
+     printf("%d\n", ar.linedefined);
+.ft P
+
+.sp
+Each character in the string \fBwhat\fP
+selects some fields of the structure \fBar\fP to be filled or
+a value to be pushed on the stack:
+
+.TP
+\fB'\fBn\fP':\fP fills in the field \fBname\fP and \fBnamewhat\fP;
+
+.TP
+\fB'\fBS\fP':\fP
+fills in the fields \fBsource\fP, \fBshort_src\fP,
+\fBlinedefined\fP, \fBlastlinedefined\fP, and \fBwhat\fP;
+
+.TP
+\fB'\fBl\fP':\fP fills in the field \fBcurrentline\fP;
+
+.TP
+\fB'\fBu\fP':\fP fills in the field \fBnups\fP;
+
+.TP
+\fB'\fBf\fP':\fP
+pushes onto the stack the function that is
+running at the given level;
+
+.TP
+\fB'\fBL\fP':\fP
+pushes onto the stack a table whose indices are the
+numbers of the lines that are valid on the function.
+(A \fBvalid line\fP is a line with some associated code,
+that is, a line where you can put a break point.
+Non-valid lines include empty lines and comments.)
+
+.PP
+
+.sp
+This function returns 0 on error
+(for instance, an invalid option in \fBwhat\fP).
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_getlocal - liblua API documentation
+
+.SH PROPERTIES
+[-0, +(0|1), \fB-\fP]
+.SH SYNOPSIS
+const char *lua_getlocal (lua_State *L, lua_Debug *ar, int n);
+
+.SH DESCRIPTION
+
+.sp
+Gets information about a local variable of a given activation record.
+The parameter \fBar\fP must be a valid activation record that was
+filled by a previous call to \fBlua_getstack\fP or
+given as argument to a hook (see \fBlua_Hook\fP).
+The index \fBn\fP selects which local variable to inspect
+(1 is the first parameter or active local variable, and so on,
+until the last active local variable).
+\fBlua_getlocal\fP pushes the variable's value onto the stack
+and returns its name.
+
+.sp
+Variable names starting with '\fB(\fP' (open parentheses)
+represent internal variables
+(loop control variables, temporaries, and C function locals).
+
+.sp
+Returns \fBNULL\fP (and pushes nothing)
+when the index is greater than
+the number of active local variables.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_getstack - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+int lua_getstack (lua_State *L, int level, lua_Debug *ar);
+
+.SH DESCRIPTION
+
+.sp
+Get information about the interpreter runtime stack.
+
+.sp
+This function fills parts of a \fBlua_Debug\fP structure with
+an identification of the \fBactivation record\fP
+of the function executing at a given level.
+Level 0 is the current running function,
+whereas level \fBn+1\fP is the function that has called level \fBn\fP.
+When there are no errors, \fBlua_getstack\fP returns 1;
+when called with a level greater than the stack depth,
+it returns 0.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_getupvalue - liblua API documentation
+
+.SH PROPERTIES
+[-0, +(0|1), \fB-\fP]
+.SH SYNOPSIS
+const char *lua_getupvalue (lua_State *L, int funcindex, int n);
+
+.SH DESCRIPTION
+
+.sp
+Gets information about a closure's upvalue.
+(For Lua functions,
+upvalues are the external local variables that the function uses,
+and that are consequently included in its closure.)
+\fBlua_getupvalue\fP gets the index \fBn\fP of an upvalue,
+pushes the upvalue's value onto the stack,
+and returns its name.
+\fBfuncindex\fP points to the closure in the stack.
+(Upvalues have no particular order,
+as they are active through the whole function.
+So, they are numbered in an arbitrary order.)
+
+.sp
+Returns \fBNULL\fP (and pushes nothing)
+when the index is greater than the number of upvalues.
+For C functions, this function uses the empty string \fB""\fP
+as a name for all upvalues.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_Hook - liblua API documentation
+
+.SH SYNOPSIS
+typedef void (*lua_Hook) (lua_State *L, lua_Debug *ar);
+
+.SH DESCRIPTION
+
+.sp
+Type for debugging hook functions.
+
+.sp
+Whenever a hook is called, its \fBar\fP argument has its field
+\fBevent\fP set to the specific event that triggered the hook.
+Lua identifies these events with the following constants:
+\fBLUA_HOOKCALL\fP, \fBLUA_HOOKRET\fP,
+\fBLUA_HOOKTAILRET\fP, \fBLUA_HOOKLINE\fP,
+and \fBLUA_HOOKCOUNT\fP.
+Moreover, for line events, the field \fBcurrentline\fP is also set.
+To get the value of any other field in \fBar\fP,
+the hook must call \fBlua_getinfo\fP.
+For return events, \fBevent\fP can be \fBLUA_HOOKRET\fP,
+the normal value, or \fBLUA_HOOKTAILRET\fP.
+In the latter case, Lua is simulating a return from
+a function that did a tail call;
+in this case, it is useless to call \fBlua_getinfo\fP.
+
+.sp
+While Lua is running a hook, it disables other calls to hooks.
+Therefore, if a hook calls back Lua to execute a function or a chunk,
+this execution occurs without any calls to hooks.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_sethook - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+int lua_sethook (lua_State *L, lua_Hook f, int mask, int count);
+
+.SH DESCRIPTION
+
+.sp
+Sets the debugging hook function.
+
+.sp
+Argument \fBf\fP is the hook function.
+\fBmask\fP specifies on which events the hook will be called:
+it is formed by a bitwise or of the constants
+\fBLUA_MASKCALL\fP,
+\fBLUA_MASKRET\fP,
+\fBLUA_MASKLINE\fP,
+and \fBLUA_MASKCOUNT\fP.
+The \fBcount\fP argument is only meaningful when the mask
+includes \fBLUA_MASKCOUNT\fP.
+For each event, the hook is called as explained below:
+
+.TP
+\fBThe call hook:\fP is called when the interpreter calls a function.
+The hook is called just after Lua enters the new function,
+before the function gets its arguments.
+
+.TP
+\fBThe return hook:\fP is called when the interpreter returns from a function.
+The hook is called just before Lua leaves the function.
+You have no access to the values to be returned by the function.
+
+.TP
+\fBThe line hook:\fP is called when the interpreter is about to
+start the execution of a new line of code,
+or when it jumps back in the code (even to the same line).
+(This event only happens while Lua is executing a Lua function.)
+
+.TP
+\fBThe count hook:\fP is called after the interpreter executes every
+\fBcount\fP instructions.
+(This event only happens while Lua is executing a Lua function.)
+
+.PP
+
+.sp
+A hook is disabled by setting \fBmask\fP to zero.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_setlocal - liblua API documentation
+
+.SH PROPERTIES
+[-(0|1), +0, \fB-\fP]
+.SH SYNOPSIS
+const char *lua_setlocal (lua_State *L, lua_Debug *ar, int n);
+
+.SH DESCRIPTION
+
+.sp
+Sets the value of a local variable of a given activation record.
+Parameters \fBar\fP and \fBn\fP are as in \fBlua_getlocal\fP
+(see \fBlua_getlocal\fP).
+\fBlua_setlocal\fP assigns the value at the top of the stack
+to the variable and returns its name.
+It also pops the value from the stack.
+
+.sp
+Returns \fBNULL\fP (and pops nothing)
+when the index is greater than
+the number of active local variables.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+lua_setupvalue - liblua API documentation
+
+.SH PROPERTIES
+[-(0|1), +0, \fB-\fP]
+.SH SYNOPSIS
+const char *lua_setupvalue (lua_State *L, int funcindex, int n);
+
+.SH DESCRIPTION
+
+.sp
+Sets the value of a closure's upvalue.
+It assigns the value at the top of the stack
+to the upvalue and returns its name.
+It also pops the value from the stack.
+Parameters \fBfuncindex\fP and \fBn\fP are as in the \fBlua_getupvalue\fP
+(see \fBlua_getupvalue\fP).
+
+.sp
+Returns \fBNULL\fP (and pops nothing)
+when the index is greater than the number of upvalues.
+
+The Auxiliary Library
+
+.sp
+
+The \fBauxiliary library\fP provides several convenient functions
+to interface C with Lua.
+While the basic API provides the primitive functions for all 
+interactions between C and Lua,
+the auxiliary library provides higher-level functions for some
+common tasks.
+
+.sp
+All functions from the auxiliary library
+are defined in header file \fBlauxlib.h\fP and
+have a prefix \fBluaL_\fP.
+
+.sp
+All functions in the auxiliary library are built on
+top of the basic API,
+and so they provide nothing that cannot be done with this API.
+
+.sp
+Several functions in the auxiliary library are used to
+check C function arguments.
+Their names are always \fBluaL_check*\fP or \fBluaL_opt*\fP.
+All of these functions throw an error if the check is not satisfied.
+Because the error message is formatted for arguments
+(e.g., "\fBbad argument #1\fP"),
+you should not use these functions for other stack values.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_addchar - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBm\fP]
+.SH SYNOPSIS
+void luaL_addchar (luaL_Buffer *B, char c);
+
+.SH DESCRIPTION
+
+.sp
+Adds the character \fBc\fP to the buffer \fBB\fP
+(see \fBluaL_Buffer\fP).
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_addlstring - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBm\fP]
+.SH SYNOPSIS
+void luaL_addlstring (luaL_Buffer *B, const char *s, size_t l);
+
+.SH DESCRIPTION
+
+.sp
+Adds the string pointed to by \fBs\fP with length \fBl\fP to
+the buffer \fBB\fP
+(see \fBluaL_Buffer\fP).
+The string may contain embedded zeros.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_addsize - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBm\fP]
+.SH SYNOPSIS
+void luaL_addsize (luaL_Buffer *B, size_t n);
+
+.SH DESCRIPTION
+
+.sp
+Adds to the buffer \fBB\fP (see \fBluaL_Buffer\fP)
+a string of length \fBn\fP previously copied to the
+buffer area (see \fBluaL_prepbuffer\fP).
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_addstring - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBm\fP]
+.SH SYNOPSIS
+void luaL_addstring (luaL_Buffer *B, const char *s);
+
+.SH DESCRIPTION
+
+.sp
+Adds the zero-terminated string pointed to by \fBs\fP
+to the buffer \fBB\fP
+(see \fBluaL_Buffer\fP).
+The string may not contain embedded zeros.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_addvalue - liblua API documentation
+
+.SH PROPERTIES
+[-1, +0, \fBm\fP]
+.SH SYNOPSIS
+void luaL_addvalue (luaL_Buffer *B);
+
+.SH DESCRIPTION
+
+.sp
+Adds the value at the top of the stack
+to the buffer \fBB\fP
+(see \fBluaL_Buffer\fP).
+Pops the value.
+
+.sp
+This is the only function on string buffers that can (and must)
+be called with an extra element on the stack,
+which is the value to be added to the buffer.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_argcheck - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBv\fP]
+.SH SYNOPSIS
+void luaL_argcheck (lua_State *L, int cond, int narg, const char *extramsg);
+
+.SH DESCRIPTION
+
+.sp
+Checks whether \fBcond\fP is true.
+If not, raises an error with the following message,
+where \fBfunc\fP is retrieved from the call stack:
+
+.ft C
+     bad argument #<narg> to <func> (<extramsg>)
+.ft P
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_argerror - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBv\fP]
+.SH SYNOPSIS
+int luaL_argerror (lua_State *L, int narg, const char *extramsg);
+
+.SH DESCRIPTION
+
+.sp
+Raises an error with the following message,
+where \fBfunc\fP is retrieved from the call stack:
+
+.ft C
+     bad argument #<narg> to <func> (<extramsg>)
+.ft P
+
+.sp
+This function never returns,
+but it is an idiom to use it in C functions
+as \fBreturn luaL_argerror(\fBargs\fP)\fP.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_Buffer - liblua API documentation
+
+.SH SYNOPSIS
+typedef struct luaL_Buffer luaL_Buffer;
+
+.SH DESCRIPTION
+
+.sp
+Type for a \fBstring buffer\fP.
+
+.sp
+A string buffer allows C code to build Lua strings piecemeal.
+Its pattern of use is as follows:
+
+.TP
+First you declare a variable \fBb\fP of type \fBluaL_Buffer\fP.
+.TP
+Then you initialize it with a call \fBluaL_buffinit(L, &b)\fP.
+.TP
+Then you add string pieces to the buffer calling any of
+the \fBluaL_add*\fP functions.
+.TP
+You finish by calling \fBluaL_pushresult(&b)\fP.
+This call leaves the final string on the top of the stack.
+
+.PP
+
+.sp
+During its normal operation,
+a string buffer uses a variable number of stack slots.
+So, while using a buffer, you cannot assume that you know where
+the top of the stack is.
+You can use the stack between successive calls to buffer operations
+as long as that use is balanced;
+that is,
+when you call a buffer operation,
+the stack is at the same level
+it was immediately after the previous buffer operation.
+(The only exception to this rule is \fBluaL_addvalue\fP.)
+After calling \fBluaL_pushresult\fP the stack is back to its
+level when the buffer was initialized,
+plus the final string on its top.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_buffinit - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+void luaL_buffinit (lua_State *L, luaL_Buffer *B);
+
+.SH DESCRIPTION
+
+.sp
+Initializes a buffer \fBB\fP.
+This function does not allocate any space;
+the buffer must be declared as a variable
+(see \fBluaL_Buffer\fP).
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_callmeta - liblua API documentation
+
+.SH PROPERTIES
+[-0, +(0|1), \fBe\fP]
+.SH SYNOPSIS
+int luaL_callmeta (lua_State *L, int obj, const char *e);
+
+.SH DESCRIPTION
+
+.sp
+Calls a metamethod.
+
+.sp
+If the object at index \fBobj\fP has a metatable and this
+metatable has a field \fBe\fP,
+this function calls this field and passes the object as its only argument.
+In this case this function returns 1 and pushes onto the
+stack the value returned by the call.
+If there is no metatable or no metamethod,
+this function returns 0 (without pushing any value on the stack).
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_checkany - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBv\fP]
+.SH SYNOPSIS
+void luaL_checkany (lua_State *L, int narg);
+
+.SH DESCRIPTION
+
+.sp
+Checks whether the function has an argument
+of any type (including \fBnil\fP) at position \fBnarg\fP.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_checkint - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBv\fP]
+.SH SYNOPSIS
+int luaL_checkint (lua_State *L, int narg);
+
+.SH DESCRIPTION
+
+.sp
+Checks whether the function argument \fBnarg\fP is a number
+and returns this number cast to an \fBint\fP.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_checkinteger - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBv\fP]
+.SH SYNOPSIS
+lua_Integer luaL_checkinteger (lua_State *L, int narg);
+
+.SH DESCRIPTION
+
+.sp
+Checks whether the function argument \fBnarg\fP is a number
+and returns this number cast to a \fBlua_Integer\fP.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_checklong - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBv\fP]
+.SH SYNOPSIS
+long luaL_checklong (lua_State *L, int narg);
+
+.SH DESCRIPTION
+
+.sp
+Checks whether the function argument \fBnarg\fP is a number
+and returns this number cast to a \fBlong\fP.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_checklstring - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBv\fP]
+.SH SYNOPSIS
+const char *luaL_checklstring (lua_State *L, int narg, size_t *l);
+
+.SH DESCRIPTION
+
+.sp
+Checks whether the function argument \fBnarg\fP is a string
+and returns this string;
+if \fBl\fP is not \fBNULL\fP fills \fB*l\fP
+with the string's length.
+
+.sp
+This function uses \fBlua_tolstring\fP to get its result,
+so all conversions and caveats of that function apply here.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_checknumber - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBv\fP]
+.SH SYNOPSIS
+lua_Number luaL_checknumber (lua_State *L, int narg);
+
+.SH DESCRIPTION
+
+.sp
+Checks whether the function argument \fBnarg\fP is a number
+and returns this number.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_checkoption - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBv\fP]
+.SH SYNOPSIS
+int luaL_checkoption (lua_State *L, int narg, const char *def, const char *const lst[]);
+
+.SH DESCRIPTION
+
+.sp
+Checks whether the function argument \fBnarg\fP is a string and
+searches for this string in the array \fBlst\fP
+(which must be NULL-terminated).
+Returns the index in the array where the string was found.
+Raises an error if the argument is not a string or
+if the string cannot be found.
+
+.sp
+If \fBdef\fP is not \fBNULL\fP,
+the function uses \fBdef\fP as a default value when
+there is no argument \fBnarg\fP or if this argument is \fBnil\fP.
+
+.sp
+This is a useful function for mapping strings to C enums.
+(The usual convention in Lua libraries is
+to use strings instead of numbers to select options.)
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_checkstack - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBv\fP]
+.SH SYNOPSIS
+void luaL_checkstack (lua_State *L, int sz, const char *msg);
+
+.SH DESCRIPTION
+
+.sp
+Grows the stack size to \fBtop + sz\fP elements,
+raising an error if the stack cannot grow to that size.
+\fBmsg\fP is an additional text to go into the error message.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_checkstring - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBv\fP]
+.SH SYNOPSIS
+const char *luaL_checkstring (lua_State *L, int narg);
+
+.SH DESCRIPTION
+
+.sp
+Checks whether the function argument \fBnarg\fP is a string
+and returns this string.
+
+.sp
+This function uses \fBlua_tolstring\fP to get its result,
+so all conversions and caveats of that function apply here.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_checktype - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBv\fP]
+.SH SYNOPSIS
+void luaL_checktype (lua_State *L, int narg, int t);
+
+.SH DESCRIPTION
+
+.sp
+Checks whether the function argument \fBnarg\fP has type \fBt\fP.
+See \fBlua_type\fP for the encoding of types for \fBt\fP.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_checkudata - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBv\fP]
+.SH SYNOPSIS
+void *luaL_checkudata (lua_State *L, int narg, const char *tname);
+
+.SH DESCRIPTION
+
+.sp
+Checks whether the function argument \fBnarg\fP is a userdata
+of the type \fBtname\fP (see \fBluaL_newmetatable\fP).
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_dofile - liblua API documentation
+
+.SH PROPERTIES
+[-0, +?, \fBm\fP]
+.SH SYNOPSIS
+int luaL_dofile (lua_State *L, const char *filename);
+
+.SH DESCRIPTION
+
+.sp
+Loads and runs the given file.
+It is defined as the following macro:
+
+.ft C
+     (luaL_loadfile(L, filename) || lua_pcall(L, 0, LUA_MULTRET, 0))
+.ft P
+
+.sp
+It returns 0 if there are no errors
+or 1 in case of errors.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_dostring - liblua API documentation
+
+.SH PROPERTIES
+[-0, +?, \fBm\fP]
+.SH SYNOPSIS
+int luaL_dostring (lua_State *L, const char *str);
+
+.SH DESCRIPTION
+
+.sp
+Loads and runs the given string.
+It is defined as the following macro:
+
+.ft C
+     (luaL_loadstring(L, str) || lua_pcall(L, 0, LUA_MULTRET, 0))
+.ft P
+
+.sp
+It returns 0 if there are no errors
+or 1 in case of errors.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_error - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBv\fP]
+.SH SYNOPSIS
+int luaL_error (lua_State *L, const char *fmt, ...);
+
+.SH DESCRIPTION
+
+.sp
+Raises an error.
+The error message format is given by \fBfmt\fP
+plus any extra arguments,
+following the same rules of \fBlua_pushfstring\fP.
+It also adds at the beginning of the message the file name and
+the line number where the error occurred,
+if this information is available.
+
+.sp
+This function never returns,
+but it is an idiom to use it in C functions
+as \fBreturn luaL_error(\fBargs\fP)\fP.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_getmetafield - liblua API documentation
+
+.SH PROPERTIES
+[-0, +(0|1), \fBm\fP]
+.SH SYNOPSIS
+int luaL_getmetafield (lua_State *L, int obj, const char *e);
+
+.SH DESCRIPTION
+
+.sp
+Pushes onto the stack the field \fBe\fP from the metatable
+of the object at index \fBobj\fP.
+If the object does not have a metatable,
+or if the metatable does not have this field,
+returns 0 and pushes nothing.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_getmetatable - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fB-\fP]
+.SH SYNOPSIS
+void luaL_getmetatable (lua_State *L, const char *tname);
+
+.SH DESCRIPTION
+
+.sp
+Pushes onto the stack the metatable associated with name \fBtname\fP
+in the registry (see \fBluaL_newmetatable\fP).
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_gsub - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fBm\fP]
+.SH SYNOPSIS
+const char *luaL_gsub (lua_State *L, const char *s, const char *p, const char *r);
+
+.SH DESCRIPTION
+
+.sp
+Creates a copy of string \fBs\fP by replacing
+any occurrence of the string \fBp\fP
+with the string \fBr\fP.
+Pushes the resulting string on the stack and returns it.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_loadbuffer - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fBm\fP]
+.SH SYNOPSIS
+int luaL_loadbuffer (lua_State *L, const char *buff, size_t sz, const char *name);
+
+.SH DESCRIPTION
+
+.sp
+Loads a buffer as a Lua chunk.
+This function uses \fBlua_load\fP to load the chunk in the
+buffer pointed to by \fBbuff\fP with size \fBsz\fP.
+
+.sp
+This function returns the same results as \fBlua_load\fP.
+\fBname\fP is the chunk name,
+used for debug information and error messages.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_loadfile - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fBm\fP]
+.SH SYNOPSIS
+int luaL_loadfile (lua_State *L, const char *filename);
+
+.SH DESCRIPTION
+
+.sp
+Loads a file as a Lua chunk.
+This function uses \fBlua_load\fP to load the chunk in the file
+named \fBfilename\fP.
+If \fBfilename\fP is \fBNULL\fP,
+then it loads from the standard input.
+The first line in the file is ignored if it starts with a \fB#\fP.
+
+.sp
+This function returns the same results as \fBlua_load\fP,
+but it has an extra error code \fBLUA_ERRFILE\fP
+if it cannot open/read the file.
+
+.sp
+As \fBlua_load\fP, this function only loads the chunk;
+it does not run it.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_loadstring - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fBm\fP]
+.SH SYNOPSIS
+int luaL_loadstring (lua_State *L, const char *s);
+
+.SH DESCRIPTION
+
+.sp
+Loads a string as a Lua chunk.
+This function uses \fBlua_load\fP to load the chunk in
+the zero-terminated string \fBs\fP.
+
+.sp
+This function returns the same results as \fBlua_load\fP.
+
+.sp
+Also as \fBlua_load\fP, this function only loads the chunk;
+it does not run it.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_newmetatable - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fBm\fP]
+.SH SYNOPSIS
+int luaL_newmetatable (lua_State *L, const char *tname);
+
+.SH DESCRIPTION
+
+.sp
+If the registry already has the key \fBtname\fP,
+returns 0.
+Otherwise,
+creates a new table to be used as a metatable for userdata,
+adds it to the registry with key \fBtname\fP,
+and returns 1.
+
+.sp
+In both cases pushes onto the stack the final value associated
+with \fBtname\fP in the registry.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_newstate - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+lua_State *luaL_newstate (void);
+
+.SH DESCRIPTION
+
+.sp
+Creates a new Lua state.
+It calls \fBlua_newstate\fP with an
+allocator based on the standard C \fBrealloc\fP function
+and then sets a panic function (see \fBlua_atpanic\fP) that prints
+an error message to the standard error output in case of fatal
+errors.
+
+.sp
+Returns the new state,
+or \fBNULL\fP if there is a memory allocation error.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_openlibs - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBm\fP]
+.SH SYNOPSIS
+void luaL_openlibs (lua_State *L);
+
+.SH DESCRIPTION
+
+.sp
+Opens all standard Lua libraries into the given state.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_optint - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBv\fP]
+.SH SYNOPSIS
+int luaL_optint (lua_State *L, int narg, int d);
+
+.SH DESCRIPTION
+
+.sp
+If the function argument \fBnarg\fP is a number,
+returns this number cast to an \fBint\fP.
+If this argument is absent or is \fBnil\fP,
+returns \fBd\fP.
+Otherwise, raises an error.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_optinteger - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBv\fP]
+.SH SYNOPSIS
+lua_Integer luaL_optinteger (lua_State *L, int narg, lua_Integer d);
+
+.SH DESCRIPTION
+
+.sp
+If the function argument \fBnarg\fP is a number,
+returns this number cast to a \fBlua_Integer\fP.
+If this argument is absent or is \fBnil\fP,
+returns \fBd\fP.
+Otherwise, raises an error.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_optlong - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBv\fP]
+.SH SYNOPSIS
+long luaL_optlong (lua_State *L, int narg, long d);
+
+.SH DESCRIPTION
+
+.sp
+If the function argument \fBnarg\fP is a number,
+returns this number cast to a \fBlong\fP.
+If this argument is absent or is \fBnil\fP,
+returns \fBd\fP.
+Otherwise, raises an error.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_optlstring - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBv\fP]
+.SH SYNOPSIS
+const char *luaL_optlstring (lua_State *L, int narg, const char *d, size_t *l);
+
+.SH DESCRIPTION
+
+.sp
+If the function argument \fBnarg\fP is a string,
+returns this string.
+If this argument is absent or is \fBnil\fP,
+returns \fBd\fP.
+Otherwise, raises an error.
+
+.sp
+If \fBl\fP is not \fBNULL\fP,
+fills the position \fB*l\fP with the results's length.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_optnumber - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBv\fP]
+.SH SYNOPSIS
+lua_Number luaL_optnumber (lua_State *L, int narg, lua_Number d);
+
+.SH DESCRIPTION
+
+.sp
+If the function argument \fBnarg\fP is a number,
+returns this number.
+If this argument is absent or is \fBnil\fP,
+returns \fBd\fP.
+Otherwise, raises an error.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_optstring - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBv\fP]
+.SH SYNOPSIS
+const char *luaL_optstring (lua_State *L, int narg, const char *d);
+
+.SH DESCRIPTION
+
+.sp
+If the function argument \fBnarg\fP is a string,
+returns this string.
+If this argument is absent or is \fBnil\fP,
+returns \fBd\fP.
+Otherwise, raises an error.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_prepbuffer - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+char *luaL_prepbuffer (luaL_Buffer *B);
+
+.SH DESCRIPTION
+
+.sp
+Returns an address to a space of size \fBLUAL_BUFFERSIZE\fP
+where you can copy a string to be added to buffer \fBB\fP
+(see \fBluaL_Buffer\fP).
+After copying the string into this space you must call
+\fBluaL_addsize\fP with the size of the string to actually add 
+it to the buffer.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_pushresult - liblua API documentation
+
+.SH PROPERTIES
+[-?, +1, \fBm\fP]
+.SH SYNOPSIS
+void luaL_pushresult (luaL_Buffer *B);
+
+.SH DESCRIPTION
+
+.sp
+Finishes the use of buffer \fBB\fP leaving the final string on
+the top of the stack.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_ref - liblua API documentation
+
+.SH PROPERTIES
+[-1, +0, \fBm\fP]
+.SH SYNOPSIS
+int luaL_ref (lua_State *L, int t);
+
+.SH DESCRIPTION
+
+.sp
+Creates and returns a \fBreference\fP,
+in the table at index \fBt\fP,
+for the object at the top of the stack (and pops the object).
+
+.sp
+A reference is a unique integer key.
+As long as you do not manually add integer keys into table \fBt\fP,
+\fBluaL_ref\fP ensures the uniqueness of the key it returns.
+You can retrieve an object referred by reference \fBr\fP
+by calling \fBlua_rawgeti(L, t, r)\fP.
+Function \fBluaL_unref\fP frees a reference and its associated object.
+
+.sp
+If the object at the top of the stack is \fBnil\fP,
+\fBluaL_ref\fP returns the constant \fBLUA_REFNIL\fP.
+The constant \fBLUA_NOREF\fP is guaranteed to be different
+from any reference returned by \fBluaL_ref\fP.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_Reg - liblua API documentation
+
+.ft C
+typedef struct luaL_Reg {
+  const char *name;
+  lua_CFunction func;
+} luaL_Reg;
+.ft P
+
+.sp
+Type for arrays of functions to be registered by
+\fBluaL_register\fP.
+\fBname\fP is the function name and \fBfunc\fP is a pointer to
+the function.
+Any array of \fBluaL_Reg\fP must end with an sentinel entry
+in which both \fBname\fP and \fBfunc\fP are \fBNULL\fP.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_register - liblua API documentation
+
+.SH PROPERTIES
+[-(0|1), +1, \fBm\fP]
+.SH SYNOPSIS
+void luaL_register (lua_State *L, const char *libname, const luaL_Reg *l);
+
+.SH DESCRIPTION
+
+.sp
+Opens a library.
+
+.sp
+When called with \fBlibname\fP equal to \fBNULL\fP,
+it simply registers all functions in the list \fBl\fP
+(see \fBluaL_Reg\fP) into the table on the top of the stack.
+
+.sp
+When called with a non-null \fBlibname\fP,
+\fBluaL_register\fP creates a new table \fBt\fP,
+sets it as the value of the global variable \fBlibname\fP,
+sets it as the value of \fBpackage.loaded[libname]\fP,
+and registers on it all functions in the list \fBl\fP.
+If there is a table in \fBpackage.loaded[libname]\fP or in
+variable \fBlibname\fP,
+reuses this table instead of creating a new one.
+
+.sp
+In any case the function leaves the table
+on the top of the stack.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_typename - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+const char *luaL_typename (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Returns the name of the type of the value at the given index.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_typerror - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBv\fP]
+.SH SYNOPSIS
+int luaL_typerror (lua_State *L, int narg, const char *tname);
+
+.SH DESCRIPTION
+
+.sp
+Generates an error with a message like the following:
+
+.ft C
+     \fBlocation\fP: bad argument \fBnarg\fP to '\fBfunc\fP' (\fBtname\fP expected, got \fBrt\fP)
+.ft P
+.sp
+where \fB\fBlocation\fP\fP is produced by \fBluaL_where\fP,
+\fB\fBfunc\fP\fP is the name of the current function,
+and \fB\fBrt\fP\fP is the type name of the actual argument.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_unref - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+void luaL_unref (lua_State *L, int t, int ref);
+
+.SH DESCRIPTION
+
+.sp
+Releases reference \fBref\fP from the table at index \fBt\fP
+(see \fBluaL_ref\fP).
+The entry is removed from the table,
+so that the referred object can be collected.
+The reference \fBref\fP is also freed to be used again.
+
+.sp
+If \fBref\fP is \fBLUA_NOREF\fP or \fBLUA_REFNIL\fP,
+\fBluaL_unref\fP does nothing.
+
+.SH
+--------------------------------------------------------------------
+.SH NAME
+luaL_where - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fBm\fP]
+.SH SYNOPSIS
+void luaL_where (lua_State *L, int lvl);
+
+.SH DESCRIPTION
+
+.sp
+Pushes onto the stack a string identifying the current position
+of the control at level \fBlvl\fP in the call stack.
+Typically this string has the following format:
+
+.ft C
+     chunkname:currentline:
+.ft P
+
+.sp
+Level 0 is the running function,
+level 1 is the function that called the running function,
+etc.
+
+.sp
+This function is used to build a prefix for error messages.

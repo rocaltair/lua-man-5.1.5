@@ -1,0 +1,19 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_newstate - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+lua_State *lua_newstate (lua_Alloc f, void *ud);
+
+.SH DESCRIPTION
+
+.sp
+Creates a new, independent state.
+Returns \fBNULL\fP if cannot create the state
+(due to lack of memory).
+The argument \fBf\fP is the allocator function;
+Lua does all memory allocation for this state through this function.
+The second argument, \fBud\fP, is an opaque pointer that Lua
+simply passes to the allocator in every call.

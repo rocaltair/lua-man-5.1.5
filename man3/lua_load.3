@@ -1,0 +1,48 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_load - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fB-\fP]
+.SH SYNOPSIS
+int lua_load (lua_State *L, lua_Reader reader, void *data, const char *chunkname);
+
+.SH DESCRIPTION
+
+.sp
+Loads a Lua chunk.
+If there are no errors,
+\fBlua_load\fP pushes the compiled chunk as a Lua
+function on top of the stack.
+Otherwise, it pushes an error message.
+The return values of \fBlua_load\fP are:
+
+.TP
+\fB0:\fP no errors;
+
+.TP
+\fB\fBLUA_ERRSYNTAX\fP:\fP
+syntax error during pre-compilation;
+
+.TP
+\fB\fBLUA_ERRMEM\fP:\fP
+memory allocation error.
+
+.PP
+
+.sp
+This function only loads a chunk;
+it does not run it.
+
+.sp
+\fBlua_load\fP automatically detects whether the chunk is text or binary,
+and loads it accordingly (see program \fBluac\fP).
+
+.sp
+The \fBlua_load\fP function uses a user-supplied \fBreader\fP function
+to read the chunk (see \fBlua_Reader\fP).
+The \fBdata\fP argument is an opaque value passed to the reader function.
+
+.sp
+The \fBchunkname\fP argument gives a name to the chunk,
+which is used for error messages and in debug information.

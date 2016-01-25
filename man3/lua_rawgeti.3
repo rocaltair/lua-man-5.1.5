@@ -1,0 +1,16 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_rawgeti - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fB-\fP]
+.SH SYNOPSIS
+void lua_rawgeti (lua_State *L, int index, int n);
+
+.SH DESCRIPTION
+
+.sp
+Pushes onto the stack the value \fBt[n]\fP,
+where \fBt\fP is the value at the given valid index.
+The access is raw;
+that is, it does not invoke metamethods.

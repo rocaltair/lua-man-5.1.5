@@ -1,0 +1,18 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_status - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+int lua_status (lua_State *L);
+
+.SH DESCRIPTION
+
+.sp
+Returns the status of the thread \fBL\fP.
+
+.sp
+The status can be 0 for a normal thread,
+an error code if the thread finished its execution with an error,
+or \fBLUA_YIELD\fP if the thread is suspended.

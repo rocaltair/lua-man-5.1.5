@@ -1,0 +1,14 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_typename - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+const char *lua_typename  (lua_State *L, int tp);
+
+.SH DESCRIPTION
+
+.sp
+Returns the name of the type encoded by the value \fBtp\fP,
+which must be one the values returned by \fBlua_type\fP.

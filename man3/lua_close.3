@@ -1,0 +1,21 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_close - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+void lua_close (lua_State *L);
+
+.SH DESCRIPTION
+
+.sp
+Destroys all objects in the given Lua state
+(calling the corresponding garbage-collection metamethods, if any)
+and frees all dynamic memory used by this state.
+On several platforms, you may not need to call this function,
+because all resources are naturally released when the host program ends.
+On the other hand, long-running programs,
+such as a daemon or a web server,
+might need to release states as soon as they are not needed,
+to avoid growing too large.

@@ -1,0 +1,23 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_setlocal - liblua API documentation
+
+.SH PROPERTIES
+[-(0|1), +0, \fB-\fP]
+.SH SYNOPSIS
+const char *lua_setlocal (lua_State *L, lua_Debug *ar, int n);
+
+.SH DESCRIPTION
+
+.sp
+Sets the value of a local variable of a given activation record.
+Parameters \fBar\fP and \fBn\fP are as in \fBlua_getlocal\fP
+(see \fBlua_getlocal\fP).
+\fBlua_setlocal\fP assigns the value at the top of the stack
+to the variable and returns its name.
+It also pops the value from the stack.
+
+.sp
+Returns \fBNULL\fP (and pops nothing)
+when the index is greater than
+the number of active local variables.

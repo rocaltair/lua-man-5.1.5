@@ -1,0 +1,29 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_dump - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBm\fP]
+.SH SYNOPSIS
+int lua_dump (lua_State *L, lua_Writer writer, void *data);
+
+.SH DESCRIPTION
+
+.sp
+Dumps a function as a binary chunk.
+Receives a Lua function on the top of the stack
+and produces a binary chunk that,
+if loaded again,
+results in a function equivalent to the one dumped.
+As it produces parts of the chunk,
+\fBlua_dump\fP calls function \fBwriter\fP (see \fBlua_Writer\fP)
+with the given \fBdata\fP
+to write them.
+
+.sp
+The value returned is the error code returned by the last
+call to the writer;
+0 means no errors.
+
+.sp
+This function does not pop the Lua function from the stack.

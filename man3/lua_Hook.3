@@ -1,0 +1,32 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_Hook - liblua API documentation
+
+.SH SYNOPSIS
+typedef void (*lua_Hook) (lua_State *L, lua_Debug *ar);
+
+.SH DESCRIPTION
+
+.sp
+Type for debugging hook functions.
+
+.sp
+Whenever a hook is called, its \fBar\fP argument has its field
+\fBevent\fP set to the specific event that triggered the hook.
+Lua identifies these events with the following constants:
+\fBLUA_HOOKCALL\fP, \fBLUA_HOOKRET\fP,
+\fBLUA_HOOKTAILRET\fP, \fBLUA_HOOKLINE\fP,
+and \fBLUA_HOOKCOUNT\fP.
+Moreover, for line events, the field \fBcurrentline\fP is also set.
+To get the value of any other field in \fBar\fP,
+the hook must call \fBlua_getinfo\fP.
+For return events, \fBevent\fP can be \fBLUA_HOOKRET\fP,
+the normal value, or \fBLUA_HOOKTAILRET\fP.
+In the latter case, Lua is simulating a return from
+a function that did a tail call;
+in this case, it is useless to call \fBlua_getinfo\fP.
+
+.sp
+While Lua is running a hook, it disables other calls to hooks.
+Therefore, if a hook calls back Lua to execute a function or a chunk,
+this execution occurs without any calls to hooks.

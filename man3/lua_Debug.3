@@ -1,0 +1,92 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_Debug - liblua API documentation
+
+.ft C
+typedef struct lua_Debug {
+  int event;
+  const char *name;           /* (n) */
+  const char *namewhat;       /* (n) */
+  const char *what;           /* (S) */
+  const char *source;         /* (S) */
+  int currentline;            /* (l) */
+  int nups;                   /* (u) number of upvalues */
+  int linedefined;            /* (S) */
+  int lastlinedefined;        /* (S) */
+  char short_src[LUA_IDSIZE]; /* (S) */
+  /* private part */
+  \fBother fields\fP
+} lua_Debug;
+.ft P
+
+.sp
+A structure used to carry different pieces of
+information about an active function.
+\fBlua_getstack\fP fills only the private part
+of this structure, for later use.
+To fill the other fields of \fBlua_Debug\fP with useful information,
+call \fBlua_getinfo\fP.
+
+.sp
+The fields of \fBlua_Debug\fP have the following meaning:
+
+.TP
+\fB\fBsource\fP:\fP
+If the function was defined in a string,
+then \fBsource\fP is that string.
+If the function was defined in a file,
+then \fBsource\fP starts with a '\fB@\fP' followed by the file name.
+
+.TP
+\fB\fBshort_src\fP:\fP
+a "printable" version of \fBsource\fP, to be used in error messages.
+
+.TP
+\fB\fBlinedefined\fP:\fP
+the line number where the definition of the function starts.
+
+.TP
+\fB\fBlastlinedefined\fP:\fP
+the line number where the definition of the function ends.
+
+.TP
+\fB\fBwhat\fP:\fP
+the string \fB"Lua"\fP if the function is a Lua function,
+\fB"C"\fP if it is a C function,
+\fB"main"\fP if it is the main part of a chunk,
+and \fB"tail"\fP if it was a function that did a tail call.
+In the latter case,
+Lua has no other information about the function.
+
+.TP
+\fB\fBcurrentline\fP:\fP
+the current line where the given function is executing.
+When no line information is available,
+\fBcurrentline\fP is set to -1.
+
+.TP
+\fB\fBname\fP:\fP
+a reasonable name for the given function.
+Because functions in Lua are first-class values,
+they do not have a fixed name:
+some functions can be the value of multiple global variables,
+while others can be stored only in a table field.
+The \fBlua_getinfo\fP function checks how the function was
+called to find a suitable name.
+If it cannot find a name,
+then \fBname\fP is set to \fBNULL\fP.
+
+.TP
+\fB\fBnamewhat\fP:\fP
+explains the \fBname\fP field.
+The value of \fBnamewhat\fP can be
+\fB"global"\fP, \fB"local"\fP, \fB"method"\fP,
+\fB"field"\fP, \fB"upvalue"\fP, or \fB""\fP (the empty string),
+according to how the function was called.
+(Lua uses the empty string when no other option seems to apply.)
+
+.TP
+\fB\fBnups\fP:\fP
+the number of upvalues of the function.
+
+.PP

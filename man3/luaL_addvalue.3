@@ -1,0 +1,21 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+luaL_addvalue - liblua API documentation
+
+.SH PROPERTIES
+[-1, +0, \fBm\fP]
+.SH SYNOPSIS
+void luaL_addvalue (luaL_Buffer *B);
+
+.SH DESCRIPTION
+
+.sp
+Adds the value at the top of the stack
+to the buffer \fBB\fP
+(see \fBluaL_Buffer\fP).
+Pops the value.
+
+.sp
+This is the only function on string buffers that can (and must)
+be called with an extra element on the stack,
+which is the value to be added to the buffer.

@@ -1,0 +1,55 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_Alloc - liblua API documentation
+
+.SH SYNOPSIS
+typedef void * (*lua_Alloc) (void *ud, void *ptr, size_t osize, size_t nsize);
+
+.SH DESCRIPTION
+
+.sp
+The type of the memory-allocation function used by Lua
+states.
+The allocator function must provide a
+functionality similar to \fBrealloc\fP,
+but not exactly the same.
+Its arguments are
+\fBud\fP, an opaque pointer passed to \fBlua_newstate\fP;
+\fBptr\fP, a pointer to the block being allocated/reallocated/freed;
+\fBosize\fP, the original size of the block;
+\fBnsize\fP, the new size of the block.
+\fBptr\fP is \fBNULL\fP if and only if \fBosize\fP is zero.
+When \fBnsize\fP is zero, the allocator must return \fBNULL\fP;
+if \fBosize\fP is not zero,
+it should free the block pointed to by \fBptr\fP.
+When \fBnsize\fP is not zero, the allocator returns \fBNULL\fP
+if and only if it cannot fill the request.
+When \fBnsize\fP is not zero and \fBosize\fP is zero,
+the allocator should behave like \fBmalloc\fP.
+When \fBnsize\fP and \fBosize\fP are not zero,
+the allocator behaves like \fBrealloc\fP.
+Lua assumes that the allocator never fails when
+\fBosize >= nsize\fP.
+
+.sp
+Here is a simple implementation for the allocator function.
+It is used in the auxiliary library by \fBluaL_newstate\fP.
+
+.ft C
+     static void *l_alloc (void *ud, void *ptr, size_t osize,
+                                                size_t nsize) {
+       (void)ud;  (void)osize;  /* not used */
+       if (nsize == 0) {
+         free(ptr);
+         return NULL;
+       }
+       else
+         return realloc(ptr, nsize);
+     }
+.ft P
+
+.sp
+This code assumes
+that \fBfree(NULL)\fP has no effect and that
+\fBrealloc(NULL, size)\fP is equivalent to \fBmalloc(size)\fP.
+ANSI C ensures both behaviors.

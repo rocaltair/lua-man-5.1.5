@@ -1,0 +1,20 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_cpcall - liblua API documentation
+
+.SH PROPERTIES
+[-0, +(0|1), \fB-\fP]
+.SH SYNOPSIS
+int lua_cpcall (lua_State *L, lua_CFunction func, void *ud);
+
+.SH DESCRIPTION
+
+.sp
+Calls the C function \fBfunc\fP in protected mode.
+\fBfunc\fP starts with only one element in its stack,
+a light userdata containing \fBud\fP.
+In case of errors,
+\fBlua_cpcall\fP returns the same error codes as \fBlua_pcall\fP,
+plus the error object on the top of the stack;
+otherwise, it returns zero, and does not change the stack.
+All values returned by \fBfunc\fP are discarded.

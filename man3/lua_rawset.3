@@ -1,0 +1,14 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_rawset - liblua API documentation
+
+.SH PROPERTIES
+[-2, +0, \fBm\fP]
+.SH SYNOPSIS
+void lua_rawset (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Similar to \fBlua_settable\fP, but does a raw assignment
+(i.e., without metamethods).

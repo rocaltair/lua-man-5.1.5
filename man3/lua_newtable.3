@@ -1,0 +1,14 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_newtable - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fBm\fP]
+.SH SYNOPSIS
+void lua_newtable (lua_State *L);
+
+.SH DESCRIPTION
+
+.sp
+Creates a new empty table and pushes it onto the stack.
+It is equivalent to \fBlua_createtable(L, 0, 0)\fP.

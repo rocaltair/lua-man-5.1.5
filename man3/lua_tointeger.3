@@ -1,0 +1,20 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_tointeger - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+lua_Integer lua_tointeger (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Converts the Lua value at the given acceptable index
+to the signed integral type \fBlua_Integer\fP.
+The Lua value must be a number or a string convertible to a number;
+otherwise, \fBlua_tointeger\fP returns 0.
+
+.sp
+If the number is not an integer,
+it is truncated in some non-specified way.

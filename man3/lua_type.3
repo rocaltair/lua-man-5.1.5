@@ -1,0 +1,27 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_type - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+int lua_type (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Returns the type of the value in the given acceptable index,
+or \fBLUA_TNONE\fP for a non-valid index
+(that is, an index to an "empty" stack position).
+The types returned by \fBlua_type\fP are coded by the following constants
+defined in \fBlua.h\fP:
+\fBLUA_TNIL\fP,
+\fBLUA_TNUMBER\fP,
+\fBLUA_TBOOLEAN\fP,
+\fBLUA_TSTRING\fP,
+\fBLUA_TTABLE\fP,
+\fBLUA_TFUNCTION\fP,
+\fBLUA_TUSERDATA\fP,
+\fBLUA_TTHREAD\fP,
+and
+\fBLUA_TLIGHTUSERDATA\fP.

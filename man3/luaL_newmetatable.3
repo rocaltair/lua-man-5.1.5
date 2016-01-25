@@ -1,0 +1,22 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+luaL_newmetatable - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fBm\fP]
+.SH SYNOPSIS
+int luaL_newmetatable (lua_State *L, const char *tname);
+
+.SH DESCRIPTION
+
+.sp
+If the registry already has the key \fBtname\fP,
+returns 0.
+Otherwise,
+creates a new table to be used as a metatable for userdata,
+adds it to the registry with key \fBtname\fP,
+and returns 1.
+
+.sp
+In both cases pushes onto the stack the final value associated
+with \fBtname\fP in the registry.

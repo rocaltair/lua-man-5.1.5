@@ -1,0 +1,15 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+luaL_addsize - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBm\fP]
+.SH SYNOPSIS
+void luaL_addsize (luaL_Buffer *B, size_t n);
+
+.SH DESCRIPTION
+
+.sp
+Adds to the buffer \fBB\fP (see \fBluaL_Buffer\fP)
+a string of length \fBn\fP previously copied to the
+buffer area (see \fBluaL_prepbuffer\fP).

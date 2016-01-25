@@ -1,0 +1,22 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_newthread - liblua API documentation
+
+.SH PROPERTIES
+[-0, +1, \fBm\fP]
+.SH SYNOPSIS
+lua_State *lua_newthread (lua_State *L);
+
+.SH DESCRIPTION
+
+.sp
+Creates a new thread, pushes it on the stack,
+and returns a pointer to a \fBlua_State\fP that represents this new thread.
+The new state returned by this function shares with the original state
+all global objects (such as tables),
+but has an independent execution stack.
+
+.sp
+There is no explicit function to close or to destroy a thread.
+Threads are subject to garbage collection,
+like any Lua object.

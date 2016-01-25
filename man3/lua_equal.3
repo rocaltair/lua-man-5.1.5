@@ -1,0 +1,18 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_equal - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBe\fP]
+.SH SYNOPSIS
+int lua_equal (lua_State *L, int index1, int index2);
+
+.SH DESCRIPTION
+
+.sp
+Returns 1 if the two values in acceptable indices \fBindex1\fP and
+\fBindex2\fP are equal,
+following the semantics of the Lua \fB==\fP operator
+(that is, may call metamethods).
+Otherwise returns 0.
+Also returns 0 if any of the indices is non valid.

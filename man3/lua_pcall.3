@@ -1,0 +1,63 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_pcall - liblua API documentation
+
+.SH PROPERTIES
+[-(nargs + 1), +(nresults|1), \fB-\fP]
+.SH SYNOPSIS
+int lua_pcall (lua_State *L, int nargs, int nresults, int errfunc);
+
+.SH DESCRIPTION
+
+.sp
+Calls a function in protected mode.
+
+.sp
+Both \fBnargs\fP and \fBnresults\fP have the same meaning as
+in \fBlua_call\fP.
+If there are no errors during the call,
+\fBlua_pcall\fP behaves exactly like \fBlua_call\fP.
+However, if there is any error,
+\fBlua_pcall\fP catches it,
+pushes a single value on the stack (the error message),
+and returns an error code.
+Like \fBlua_call\fP,
+\fBlua_pcall\fP always removes the function
+and its arguments from the stack.
+
+.sp
+If \fBerrfunc\fP is 0,
+then the error message returned on the stack
+is exactly the original error message.
+Otherwise, \fBerrfunc\fP is the stack index of an
+\fBerror handler function\fP.
+(In the current implementation, this index cannot be a pseudo-index.)
+In case of runtime errors,
+this function will be called with the error message
+and its return value will be the message returned on the stack by \fBlua_pcall\fP.
+
+.sp
+Typically, the error handler function is used to add more debug
+information to the error message, such as a stack traceback.
+Such information cannot be gathered after the return of \fBlua_pcall\fP,
+since by then the stack has unwound.
+
+.sp
+The \fBlua_pcall\fP function returns 0 in case of success
+or one of the following error codes
+(defined in \fBlua.h\fP):
+
+.TP
+\fB\fBLUA_ERRRUN\fP:\fP
+a runtime error.
+
+.TP
+\fB\fBLUA_ERRMEM\fP:\fP
+memory allocation error.
+For such errors, Lua does not call the error handler function.
+
+.TP
+\fB\fBLUA_ERRERR\fP:\fP
+error while running the error handler function.
+
+.PP

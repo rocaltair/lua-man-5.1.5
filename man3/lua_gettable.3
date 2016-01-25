@@ -1,0 +1,21 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_gettable - liblua API documentation
+
+.SH PROPERTIES
+[-1, +1, \fBe\fP]
+.SH SYNOPSIS
+void lua_gettable (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Pushes onto the stack the value \fBt[k]\fP,
+where \fBt\fP is the value at the given valid index
+and \fBk\fP is the value at the top of the stack.
+
+.sp
+This function pops the key from the stack
+(putting the resulting value in its place).
+As in Lua, this function may trigger a metamethod
+for the "index" event.

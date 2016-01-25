@@ -1,0 +1,24 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_atpanic - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+lua_CFunction lua_atpanic (lua_State *L, lua_CFunction panicf);
+
+.SH DESCRIPTION
+
+.sp
+Sets a new panic function and returns the old one.
+
+.sp
+If an error happens outside any protected environment,
+Lua calls a \fBpanic function\fP
+and then calls \fBexit(EXIT_FAILURE)\fP,
+thus exiting the host application.
+Your panic function can avoid this exit by
+never returning (e.g., doing a long jump).
+
+.sp
+The panic function can access the error message at the top of the stack.

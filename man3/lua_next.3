@@ -1,0 +1,41 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_next - liblua API documentation
+
+.SH PROPERTIES
+[-1, +(2|0), \fBe\fP]
+.SH SYNOPSIS
+int lua_next (lua_State *L, int index);
+
+.SH DESCRIPTION
+
+.sp
+Pops a key from the stack,
+and pushes a key-value pair from the table at the given index
+(the "next" pair after the given key).
+If there are no more elements in the table,
+then \fBlua_next\fP returns 0 (and pushes nothing).
+
+.sp
+A typical traversal looks like this:
+
+.ft C
+     /* table is in the stack at index 't' */
+     lua_pushnil(L);  /* first key */
+     while (lua_next(L, t) != 0) {
+       /* uses 'key' (at index -2) and 'value' (at index -1) */
+       printf("%s - %s\n",
+              lua_typename(L, lua_type(L, -2)),
+              lua_typename(L, lua_type(L, -1)));
+       /* removes 'value'; keeps 'key' for next iteration */
+       lua_pop(L, 1);
+     }
+.ft P
+
+.sp
+While traversing a table,
+do not call \fBlua_tolstring\fP directly on a key,
+unless you know that the key is actually a string.
+Recall that \fBlua_tolstring\fP \fBchanges\fP
+the value at the given index;
+this confuses the next call to \fBlua_next\fP.

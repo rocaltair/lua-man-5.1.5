@@ -1,0 +1,16 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_gettop - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+int lua_gettop (lua_State *L);
+
+.SH DESCRIPTION
+
+.sp
+Returns the index of the top element in the stack.
+Because indices start at 1,
+this result is equal to the number of elements in the stack
+(and so 0 means an empty stack).

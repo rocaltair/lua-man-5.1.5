@@ -1,0 +1,18 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+luaL_Reg - liblua API documentation
+
+.ft C
+typedef struct luaL_Reg {
+  const char *name;
+  lua_CFunction func;
+} luaL_Reg;
+.ft P
+
+.sp
+Type for arrays of functions to be registered by
+\fBluaL_register\fP.
+\fBname\fP is the function name and \fBfunc\fP is a pointer to
+the function.
+Any array of \fBluaL_Reg\fP must end with an sentinel entry
+in which both \fBname\fP and \fBfunc\fP are \fBNULL\fP.

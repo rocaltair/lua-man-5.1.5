@@ -1,0 +1,20 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+luaL_checklstring - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fBv\fP]
+.SH SYNOPSIS
+const char *luaL_checklstring (lua_State *L, int narg, size_t *l);
+
+.SH DESCRIPTION
+
+.sp
+Checks whether the function argument \fBnarg\fP is a string
+and returns this string;
+if \fBl\fP is not \fBNULL\fP fills \fB*l\fP
+with the string's length.
+
+.sp
+This function uses \fBlua_tolstring\fP to get its result,
+so all conversions and caveats of that function apply here.

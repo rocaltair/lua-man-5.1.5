@@ -1,0 +1,15 @@
+.TH "liblua" "3" "Jan 25, 2016" "5.1.5" "lua API documentation"
+.SH NAME
+lua_getallocf - liblua API documentation
+
+.SH PROPERTIES
+[-0, +0, \fB-\fP]
+.SH SYNOPSIS
+lua_Alloc lua_getallocf (lua_State *L, void **ud);
+
+.SH DESCRIPTION
+
+.sp
+Returns the memory-allocation function of a given state.
+If \fBud\fP is not \fBNULL\fP, Lua stores in \fB*ud\fP the
+opaque pointer passed to \fBlua_newstate\fP.
